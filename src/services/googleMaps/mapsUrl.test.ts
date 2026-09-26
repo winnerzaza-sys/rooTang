@@ -3,7 +3,7 @@ import { mockRoutes } from '../../test/fixtures';
 import { googleMapsNavigationUrl } from './mapsUrl';
 
 describe('googleMapsNavigationUrl', () => {
-  it('creates a mobile navigation link through the selected route path', () => {
+  it('creates a mobile navigation link without intermediate stops', () => {
     const url = new URL(googleMapsNavigationUrl(mockRoutes[1]!));
 
     expect(url.origin + url.pathname).toBe('https://www.google.com/maps/dir/');
@@ -12,10 +12,6 @@ describe('googleMapsNavigationUrl', () => {
     expect(url.searchParams.get('dir_action')).toBe('navigate');
     expect(url.searchParams.get('origin')).toBe('13.660000,100.420000');
     expect(url.searchParams.get('destination')).toBe('13.735000,100.495000');
-    expect(url.searchParams.get('waypoints')?.split('|')).toEqual([
-      '13.690000,100.426000',
-      '13.712000,100.444000',
-      '13.728000,100.470000',
-    ]);
+    expect(url.searchParams.has('waypoints')).toBe(false);
   });
 });

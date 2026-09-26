@@ -176,7 +176,7 @@ export const incidents: RoadIncident[] = [
 export const mockRoutes: RouteOption[] = [
   {
     id: 'route-primary',
-    label: 'เส้นทางหลัก',
+    label: 'พระราม 2',
     durationMinutes: 42,
     distanceKm: 11.7,
     path: [
@@ -190,7 +190,7 @@ export const mockRoutes: RouteOption[] = [
   },
   {
     id: 'route-alternative',
-    label: 'เส้นทางเลี่ยง',
+    label: 'กาญจนาภิเษก',
     durationMinutes: 49,
     distanceKm: 12.7,
     extraMinutes: 7,

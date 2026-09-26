@@ -263,7 +263,7 @@ export function RouteResults({
           นำทางต่อใน Google Maps
         </a>
         <p className="navigation-note">
-          Google Maps อาจปรับเส้นทางตามสภาพจราจรล่าสุด
+          Google Maps จะคำนวณเส้นทางใหม่โดยไม่มีจุดแวะ
         </p>
         <h2>สิ่งที่อาจพบตามเส้นทาง</h2>
         {partial && analysis === 'ready' && (

@@ -31,6 +31,7 @@ export const googleDirectionsService: DirectionsService = {
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
       computeAlternativeRoutes: true,
+      language: 'th',
       region: 'th',
       fields: [
         'path',
@@ -38,6 +39,7 @@ export const googleDirectionsService: DirectionsService = {
         'distanceMeters',
         'viewport',
         'routeLabels',
+        'description',
       ],
     });
     return {

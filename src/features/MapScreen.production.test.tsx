@@ -175,7 +175,7 @@ describe('MapScreen with mocked Google and backend services', () => {
     ]);
     expect(screen.getByText(/ไม่ใช่ข้อมูลสด/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));
+    await user.click(screen.getByRole('radio', { name: /กาญจนาภิเษก/ }));
     expect(screen.getByText('49 นาที')).toBeInTheDocument();
     expect(
       screen.getByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 3 จุด'),

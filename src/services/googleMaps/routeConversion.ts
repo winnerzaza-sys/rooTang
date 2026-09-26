@@ -36,6 +36,11 @@ function bounds(value: GoogleRouteLike['viewport']): AppBounds | undefined {
   return value as AppBounds;
 }
 
+function routeName(description: string | null | undefined): string | undefined {
+  const name = description?.trim().replace(/^(?:via|ผ่าน)\s+/i, '');
+  return name || undefined;
+}
+
 export function convertGoogleRoutes(routes: GoogleRouteLike[]): RouteOption[] {
   const fastest = Math.min(
     ...routes.map((route) => route.durationMillis ?? Infinity),
@@ -50,7 +55,9 @@ export function convertGoogleRoutes(routes: GoogleRouteLike[]): RouteOption[] {
       : durationMinutes;
     return {
       id: `google-route-${index + 1}`,
-      label: index === 0 ? 'เส้นทางหลัก' : `เส้นทางเลือก ${index}`,
+      label:
+        routeName(route.description) ??
+        (index === 0 ? 'เส้นทางหลัก' : `เส้นทางเลือก ${index}`),
       durationMinutes,
       distanceKm: Math.round(((route.distanceMeters ?? 0) / 1000) * 10) / 10,
       ...(durationMinutes > fastestMinutes

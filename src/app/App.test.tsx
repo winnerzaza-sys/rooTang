@@ -211,23 +211,14 @@ describe('route matching on the map', () => {
     ).toHaveAttribute('data-selected', 'true');
   });
 
-  it('hands the selected route off to Google Maps navigation', async () => {
-    const user = await searchRoute();
+  it('hands the trip off to Google Maps without intermediate stops', async () => {
+    await searchRoute();
     const navigation = screen.getByRole('link', {
       name: 'นำทางต่อใน Google Maps',
     });
     const primaryUrl = new URL(navigation.getAttribute('href')!);
     expect(primaryUrl.searchParams.get('dir_action')).toBe('navigate');
-    expect(primaryUrl.searchParams.get('waypoints')).toContain(
-      '13.672000,100.440000',
-    );
-
-    await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));
-    const alternativeUrl = new URL(navigation.getAttribute('href')!);
-    expect(alternativeUrl.searchParams.get('waypoints')).toContain(
-      '13.690000,100.426000',
-    );
-    expect(alternativeUrl.toString()).not.toBe(primaryUrl.toString());
+    expect(primaryUrl.searchParams.has('waypoints')).toBe(false);
   });
 
   it('drags the route results smoothly between snap levels', async () => {
@@ -262,7 +253,7 @@ describe('route matching on the map', () => {
 
   it('changes polyline, pins, ETA, count and findings together', async () => {
     const user = await searchRoute();
-    await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));
+    await user.click(screen.getByRole('radio', { name: /กาญจนาภิเษก/ }));
     expect(screen.getByText('49 นาที')).toBeInTheDocument();
     expect(screen.getByText('12.7 กม.')).toBeInTheDocument();
     expect(
@@ -283,9 +274,10 @@ describe('route matching on the map', () => {
     expect(
       map().querySelector('[data-route-id="route-primary"]'),
     ).toHaveAttribute('data-selected', 'false');
-    expect(
-      screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }),
-    ).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /กาญจนาภิเษก/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   it('moves the route selection with arrow keys from a single tab stop', async () => {
@@ -320,7 +312,7 @@ describe('route matching on the map', () => {
         'อาจเป็นรายงานเดียวกับรายการอื่นที่อยู่ใกล้กัน',
       ),
     ).toHaveLength(2);
-    await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));
+    await user.click(screen.getByRole('radio', { name: /กาญจนาภิเษก/ }));
     expect(
       within(results()).getByText('อาจอยู่บนถนนคู่ขนานหรือถนนใกล้เคียง'),
     ).toBeInTheDocument();
