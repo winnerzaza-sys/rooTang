@@ -18,26 +18,34 @@ export function PlaceAutocompleteField({
   const host = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    let active = true;
     let cleanup: (() => void) | undefined;
     if (host.current) {
       service
         .createAutocomplete(host.current, { placeholder, onSelect, onError })
         .then((dispose) => {
+          if (!active) return dispose();
           cleanup = dispose;
           setLoading(false);
         })
         .catch(() => {
+          if (!active) return;
           setLoading(false);
           onError();
         });
     }
-    return () => cleanup?.();
+    return () => {
+      active = false;
+      cleanup?.();
+    };
   }, [onError, onSelect, placeholder, service]);
+  // The service owns the slot's children; React must never render into it.
   return (
     <label>
       <span>{label}</span>
-      <div className="places-host" ref={host} aria-busy={loading}>
+      <div className="places-host" aria-busy={loading}>
         {loading && <span>กำลังโหลดช่องค้นหา…</span>}
+        <div className="places-slot" ref={host} />
       </div>
     </label>
   );

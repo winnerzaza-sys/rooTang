@@ -278,6 +278,10 @@ select:focus-visible {
   background: #fbfcfe;
   overflow: visible;
 }
+.places-slot {
+  flex: 1;
+  min-width: 0;
+}
 .places-host gmp-place-autocomplete {
   width: 100%;
 }
