@@ -1,5 +1,14 @@
 interface IconProps {
-  name: 'map' | 'nearby' | 'locate' | 'route' | 'pin' | 'close' | 'refresh';
+  name:
+    | 'map'
+    | 'nearby'
+    | 'locate'
+    | 'route'
+    | 'pin'
+    | 'close'
+    | 'refresh'
+    | 'swap'
+    | 'chevron';
 }
 
 export function Icon({ name }: IconProps) {
@@ -45,6 +54,13 @@ export function Icon({ name }: IconProps) {
         <path d="M18.5 9A7 7 0 0 0 6 6.5L4 9M5.5 15A7 7 0 0 0 18 17.5l2-2.5" />
       </>
     ),
+    swap: (
+      <>
+        <path d="M7 7h11l-3-3M17 17H6l3 3" />
+        <path d="m15 4 3 3-3 3M9 20l-3-3 3-3" />
+      </>
+    ),
+    chevron: <path d="m7 10 5 5 5-5" />,
   };
   return (
     <svg

@@ -311,6 +311,62 @@ select:focus-visible {
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(24px) saturate(130%);
 }
+.route-panel-toolbar {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 0 10px;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+}
+.route-panel-actions {
+  display: flex;
+  gap: 2px;
+}
+.route-icon-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+.route-icon-button:hover {
+  background: var(--color-primary-soft);
+}
+.route-icon-button:disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.route-collapse-button .icon {
+  transition: transform 160ms ease;
+}
+.route-collapse-button[aria-expanded='true'] .icon {
+  transform: rotate(180deg);
+}
+.route-fields-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 2px 8px 8px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+.route-fields-summary span:not([aria-hidden]) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .route-panel label {
   display: grid;
   gap: 4px;

@@ -87,6 +87,47 @@ describe('รู้ทาง app shell', () => {
       screen.getByRole('textbox', { name: 'ปลายทาง' }),
     ).toBeInTheDocument();
   });
+
+  it('swaps the origin and destination values', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const origin = screen.getByRole('textbox', { name: 'ต้นทาง' });
+    const destination = screen.getByRole('textbox', { name: 'ปลายทาง' });
+    await user.clear(origin);
+    await user.type(origin, 'บ้าน');
+    await user.type(destination, 'ที่ทำงาน');
+
+    await user.click(
+      screen.getByRole('button', { name: 'สลับต้นทางและปลายทาง' }),
+    );
+
+    expect(origin).toHaveValue('ที่ทำงาน');
+    expect(destination).toHaveValue('บ้าน');
+  });
+
+  it('collapses and restores the route fields without losing their values', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await user.type(
+      screen.getByRole('textbox', { name: 'ปลายทาง' }),
+      'เซ็นทรัล พระราม 2',
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'ซ่อนช่องต้นทางและปลายทาง' }),
+    );
+    expect(
+      screen.queryByRole('textbox', { name: 'ปลายทาง' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('เซ็นทรัล พระราม 2')).toBeVisible();
+
+    await user.click(
+      screen.getByRole('button', { name: 'แสดงช่องต้นทางและปลายทาง' }),
+    );
+    expect(screen.getByRole('textbox', { name: 'ปลายทาง' })).toHaveValue(
+      'เซ็นทรัล พระราม 2',
+    );
+  });
 });
 
 describe('route matching on the map', () => {

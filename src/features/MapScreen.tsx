@@ -91,6 +91,7 @@ export function MapScreen({
   const [destinationPlace, setDestinationPlace] = useState<AppPlace>();
   const [locationError, setLocationError] = useState<string>();
   const [placesError, setPlacesError] = useState(false);
+  const [routeFieldsExpanded, setRouteFieldsExpanded] = useState(true);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [searchAfterLocation, setSearchAfterLocation] = useState(false);
   const [viewport, setViewport] = useState<AppBounds>({
@@ -295,6 +296,23 @@ export function MapScreen({
     else setShowLocationPrompt(true);
   }
 
+  const canSwapPlaces = production
+    ? Boolean(originPlace && destinationPlace)
+    : Boolean(origin.trim() && destination.trim());
+
+  function swapPlaces() {
+    if (!canSwapPlaces) return;
+    setValidation('');
+    if (production) {
+      const previousOrigin = originPlace;
+      setOriginPlace(destinationPlace);
+      setDestinationPlace(previousOrigin);
+      return;
+    }
+    setOrigin(destination);
+    setDestination(origin);
+  }
+
   const selectedMatch = selectedIncident
     ? view.matches.find((item) => item.incident.id === selectedIncident.id)
     : undefined;
@@ -316,69 +334,118 @@ export function MapScreen({
             void searchRoutes();
           }}
         >
-          {production ? (
-            <>
-              <PlaceAutocompleteField
-                label="ต้นทาง"
-                placeholder="ค้นหาต้นทางอื่น"
-                initialValue="ตำแหน่งปัจจุบัน"
-                service={googlePlacesService}
-                onSelect={setOriginPlace}
-                onError={onPlacesError}
-              />
-              <PlaceAutocompleteField
-                label="ปลายทาง"
-                placeholder="ต้องการไปที่ไหน"
-                service={googlePlacesService}
-                onSelect={setDestinationPlace}
-                onError={onPlacesError}
-              />
-              {originPlace && (
-                <p className="selected-place">ต้นทาง: {originPlace.label}</p>
-              )}
-              {destinationPlace && (
-                <p className="selected-place">
-                  ปลายทาง: {destinationPlace.label}
-                </p>
-              )}
-              {placesError && (
-                <p className="field-error" role="alert">
-                  ยังค้นหาสถานที่ไม่ได้ กรุณาลองใหม่
-                </p>
-              )}
-              {locationError && (
-                <p className="field-error" role="status">
-                  {locationError}
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <label className="route-field origin-field">
-                <span>ต้นทาง</span>
-                <span className="input-wrap">
-                  <Icon name="locate" />
-                  <input
-                    value={origin}
-                    onChange={(event) => setOrigin(event.target.value)}
-                    aria-label="ต้นทาง"
-                  />
-                </span>
-              </label>
-              <label className="route-field destination-field">
-                <span>ปลายทาง</span>
-                <span className="input-wrap">
-                  <Icon name="pin" />
-                  <input
-                    value={destination}
-                    onChange={(event) => setDestination(event.target.value)}
-                    aria-label="ปลายทาง"
-                    placeholder="จะไปที่ไหน?"
-                  />
-                </span>
-              </label>
-            </>
+          <div className="route-panel-toolbar">
+            <span>ต้นทางและปลายทาง</span>
+            <div className="route-panel-actions">
+              <button
+                type="button"
+                className="route-icon-button"
+                aria-label="สลับต้นทางและปลายทาง"
+                title={
+                  canSwapPlaces
+                    ? 'สลับต้นทางและปลายทาง'
+                    : 'ระบุต้นทางและปลายทางก่อน'
+                }
+                disabled={!canSwapPlaces}
+                onClick={swapPlaces}
+              >
+                <Icon name="swap" />
+              </button>
+              <button
+                type="button"
+                className="route-icon-button route-collapse-button"
+                aria-label={
+                  routeFieldsExpanded
+                    ? 'ซ่อนช่องต้นทางและปลายทาง'
+                    : 'แสดงช่องต้นทางและปลายทาง'
+                }
+                aria-expanded={routeFieldsExpanded}
+                onClick={() => setRouteFieldsExpanded((expanded) => !expanded)}
+              >
+                <Icon name="chevron" />
+              </button>
+            </div>
+          </div>
+          {!routeFieldsExpanded && (
+            <p className="route-fields-summary">
+              <span>
+                {production
+                  ? (originPlace?.label ?? 'ตำแหน่งปัจจุบัน')
+                  : origin}
+              </span>
+              <span aria-hidden="true">→</span>
+              <span>
+                {production
+                  ? (destinationPlace?.label ?? 'ยังไม่ได้ระบุปลายทาง')
+                  : destination || 'ยังไม่ได้ระบุปลายทาง'}
+              </span>
+            </p>
           )}
+          {routeFieldsExpanded &&
+            (production ? (
+              <div className="route-fields">
+                <PlaceAutocompleteField
+                  label="ต้นทาง"
+                  placeholder="ค้นหาต้นทางอื่น"
+                  initialValue={originPlace?.label ?? 'ตำแหน่งปัจจุบัน'}
+                  service={googlePlacesService}
+                  onSelect={setOriginPlace}
+                  onError={onPlacesError}
+                />
+                <PlaceAutocompleteField
+                  label="ปลายทาง"
+                  placeholder="ต้องการไปที่ไหน"
+                  initialValue={destinationPlace?.label}
+                  service={googlePlacesService}
+                  onSelect={setDestinationPlace}
+                  onError={onPlacesError}
+                />
+                {originPlace && (
+                  <p className="selected-place">ต้นทาง: {originPlace.label}</p>
+                )}
+                {destinationPlace && (
+                  <p className="selected-place">
+                    ปลายทาง: {destinationPlace.label}
+                  </p>
+                )}
+                {placesError && (
+                  <p className="field-error" role="alert">
+                    ยังค้นหาสถานที่ไม่ได้ กรุณาลองใหม่
+                  </p>
+                )}
+                {locationError && (
+                  <p className="field-error" role="status">
+                    {locationError}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="route-fields">
+                <label className="route-field origin-field">
+                  <span>ต้นทาง</span>
+                  <span className="input-wrap">
+                    <Icon name="locate" />
+                    <input
+                      value={origin}
+                      onChange={(event) => setOrigin(event.target.value)}
+                      aria-label="ต้นทาง"
+                    />
+                  </span>
+                </label>
+                <label className="route-field destination-field">
+                  <span>ปลายทาง</span>
+                  <span className="input-wrap">
+                    <Icon name="pin" />
+                    <input
+                      value={destination}
+                      onChange={(event) => setDestination(event.target.value)}
+                      aria-label="ปลายทาง"
+                      placeholder="จะไปที่ไหน?"
+                    />
+                  </span>
+                </label>
+              </div>
+            ))}
           {validation && (
             <p className="field-error" role="alert">
               {validation}
