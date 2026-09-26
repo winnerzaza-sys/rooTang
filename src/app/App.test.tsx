@@ -211,6 +211,55 @@ describe('route matching on the map', () => {
     ).toHaveAttribute('data-selected', 'true');
   });
 
+  it('hands the selected route off to Google Maps navigation', async () => {
+    const user = await searchRoute();
+    const navigation = screen.getByRole('link', {
+      name: 'นำทางต่อใน Google Maps',
+    });
+    const primaryUrl = new URL(navigation.getAttribute('href')!);
+    expect(primaryUrl.searchParams.get('dir_action')).toBe('navigate');
+    expect(primaryUrl.searchParams.get('waypoints')).toContain(
+      '13.672000,100.440000',
+    );
+
+    await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));
+    const alternativeUrl = new URL(navigation.getAttribute('href')!);
+    expect(alternativeUrl.searchParams.get('waypoints')).toContain(
+      '13.690000,100.426000',
+    );
+    expect(alternativeUrl.toString()).not.toBe(primaryUrl.toString());
+  });
+
+  it('drags the route results smoothly between snap levels', async () => {
+    await searchRoute();
+    const resultsSheet = results();
+    const handle = screen.getByRole('button', {
+      name: 'ขยายรายละเอียดเส้นทาง',
+    });
+
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      isPrimary: true,
+      clientY: 400,
+    });
+    fireEvent.pointerMove(handle, {
+      pointerId: 1,
+      isPrimary: true,
+      clientY: 120,
+    });
+    expect(resultsSheet.style.height).not.toBe('');
+    fireEvent.pointerUp(handle, {
+      pointerId: 1,
+      isPrimary: true,
+      clientY: 120,
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'ย่อรายละเอียดเส้นทาง' }),
+    ).toBeVisible();
+    expect(resultsSheet.style.height).toBe('');
+  });
+
   it('changes polyline, pins, ETA, count and findings together', async () => {
     const user = await searchRoute();
     await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));

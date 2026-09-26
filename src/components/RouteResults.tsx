@@ -19,10 +19,33 @@ import {
   formatRouteDistance,
   formatRouteDuration,
 } from '../services/googleMaps/routeConversion';
+import { googleMapsNavigationUrl } from '../services/googleMaps/mapsUrl';
+import { Icon } from './Icons';
 import { LoadingCards } from './IncidentCard';
 
 export type RouteAnalysisState = 'pending' | 'ready' | 'error' | 'offline';
 type SheetLevel = 'collapsed' | 'half' | 'expanded';
+
+interface SheetDrag {
+  pointerId: number;
+  startY: number;
+  startHeight: number;
+  currentHeight: number;
+  lastY: number;
+  lastTime: number;
+  velocityY: number;
+  moved: boolean;
+}
+
+const SHEET_LEVELS: SheetLevel[] = ['collapsed', 'half', 'expanded'];
+
+function sheetHeights(): Record<SheetLevel, number> {
+  return {
+    collapsed: 130,
+    half: window.innerHeight * 0.39,
+    expanded: window.innerHeight * 0.76,
+  };
+}
 
 interface Props {
   routes: RouteOption[];
@@ -59,17 +82,86 @@ export function RouteResults({
   onRetry,
 }: Props) {
   const [sheetLevel, setSheetLevel] = useState<SheetLevel>('half');
-  const dragStart = useRef<number | undefined>(undefined);
+  const sheet = useRef<HTMLElement>(null);
+  const drag = useRef<SheetDrag | undefined>(undefined);
+  const suppressClick = useRef(false);
 
-  function moveSheet(direction: 'up' | 'down') {
-    const levels: SheetLevel[] = ['collapsed', 'half', 'expanded'];
-    const index = levels.indexOf(sheetLevel);
-    const next = direction === 'up' ? index + 1 : index - 1;
-    setSheetLevel(levels[Math.max(0, Math.min(levels.length - 1, next))]!);
+  function startDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!event.isPrimary || !sheet.current) return;
+    const heights = sheetHeights();
+    drag.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight:
+        sheet.current.getBoundingClientRect().height || heights[sheetLevel],
+      currentHeight:
+        sheet.current.getBoundingClientRect().height || heights[sheetLevel],
+      lastY: event.clientY,
+      lastTime: event.timeStamp,
+      velocityY: 0,
+      moved: false,
+    };
+    sheet.current.classList.add('dragging');
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function updateDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    const active = drag.current;
+    if (!active || active.pointerId !== event.pointerId || !sheet.current)
+      return;
+    const distance = event.clientY - active.startY;
+    if (Math.abs(distance) > 6) active.moved = true;
+    const elapsed = Math.max(1, event.timeStamp - active.lastTime);
+    active.velocityY = (event.clientY - active.lastY) / elapsed;
+    active.lastY = event.clientY;
+    active.lastTime = event.timeStamp;
+    const heights = sheetHeights();
+    const nextHeight = Math.max(
+      heights.collapsed,
+      Math.min(heights.expanded, active.startHeight - distance),
+    );
+    active.currentHeight = nextHeight;
+    sheet.current.style.height = `${nextHeight}px`;
+  }
+
+  function finishDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    const active = drag.current;
+    if (!active || active.pointerId !== event.pointerId || !sheet.current)
+      return;
+    drag.current = undefined;
+    sheet.current.classList.remove('dragging');
+    if (!active.moved) {
+      sheet.current.style.removeProperty('height');
+      return;
+    }
+    const heights = sheetHeights();
+    const projectedHeight = Math.max(
+      heights.collapsed,
+      Math.min(heights.expanded, active.currentHeight - active.velocityY * 180),
+    );
+    const nextLevel = SHEET_LEVELS.reduce((closest, level) =>
+      Math.abs(heights[level] - projectedHeight) <
+      Math.abs(heights[closest] - projectedHeight)
+        ? level
+        : closest,
+    );
+    suppressClick.current = true;
+    setSheetLevel(nextLevel);
+    sheet.current.style.removeProperty('height');
+    window.setTimeout(() => {
+      suppressClick.current = false;
+    });
+  }
+
+  function cancelDrag() {
+    drag.current = undefined;
+    sheet.current?.classList.remove('dragging');
+    sheet.current?.style.removeProperty('height');
   }
 
   return (
     <section
+      ref={sheet}
       className={`route-results ${sheetLevel}`}
       aria-label="ผลการค้นหาเส้นทาง"
     >
@@ -82,19 +174,14 @@ export function RouteResults({
             : 'ขยายรายละเอียดเส้นทาง'
         }
         aria-expanded={sheetLevel === 'expanded'}
-        onClick={() =>
-          setSheetLevel(sheetLevel === 'expanded' ? 'collapsed' : 'expanded')
-        }
-        onPointerDown={(event) => {
-          dragStart.current = event.clientY;
-          event.currentTarget.setPointerCapture(event.pointerId);
+        onClick={() => {
+          if (suppressClick.current) return;
+          setSheetLevel(sheetLevel === 'expanded' ? 'collapsed' : 'expanded');
         }}
-        onPointerUp={(event) => {
-          if (dragStart.current === undefined) return;
-          const distance = event.clientY - dragStart.current;
-          dragStart.current = undefined;
-          if (Math.abs(distance) >= 24) moveSheet(distance < 0 ? 'up' : 'down');
-        }}
+        onPointerDown={startDrag}
+        onPointerMove={updateDrag}
+        onPointerUp={finishDrag}
+        onPointerCancel={cancelDrag}
       >
         <span className="sheet-handle" aria-hidden="true" />
       </button>
@@ -105,7 +192,10 @@ export function RouteResults({
         </div>
         <p>{countLabel(analysis, matches.length)}</p>
       </div>
-      <div className="route-results-body" hidden={sheetLevel === 'collapsed'}>
+      <div
+        className="route-results-body"
+        aria-hidden={sheetLevel === 'collapsed'}
+      >
         <div
           className="route-options"
           role="radiogroup"
@@ -163,6 +253,18 @@ export function RouteResults({
             );
           })}
         </div>
+        <a
+          className="google-maps-navigation"
+          href={googleMapsNavigationUrl(selectedRoute)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon name="route" />
+          นำทางต่อใน Google Maps
+        </a>
+        <p className="navigation-note">
+          Google Maps อาจปรับเส้นทางตามสภาพจราจรล่าสุด
+        </p>
         <h2>สิ่งที่อาจพบตามเส้นทาง</h2>
         {partial && analysis === 'ready' && (
           <p className="inline-warning" role="status">
