@@ -94,6 +94,10 @@ export function MapScreen({
   const [routeFieldsExpanded, setRouteFieldsExpanded] = useState(true);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [searchAfterLocation, setSearchAfterLocation] = useState(false);
+  const routeSwipeStart = useRef<{ x: number; y: number } | undefined>(
+    undefined,
+  );
+  const routeSwipeHandled = useRef(false);
   const [viewport, setViewport] = useState<AppBounds>({
     north: 13.95,
     south: 13.55,
@@ -313,6 +317,32 @@ export function MapScreen({
     setDestination(origin);
   }
 
+  function startRouteSwipe(event: React.PointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary) return;
+    routeSwipeStart.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function finishRouteSwipe(event: React.PointerEvent<HTMLDivElement>) {
+    const start = routeSwipeStart.current;
+    routeSwipeStart.current = undefined;
+    if (!start) return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaY) < 48 || Math.abs(deltaY) <= Math.abs(deltaX) * 1.2)
+      return;
+    routeSwipeHandled.current = true;
+    setRouteFieldsExpanded(deltaY < 0);
+    window.setTimeout(() => {
+      routeSwipeHandled.current = false;
+    });
+  }
+
+  function toggleRouteFields() {
+    if (routeSwipeHandled.current) return;
+    setRouteFieldsExpanded((expanded) => !expanded);
+  }
+
   const selectedMatch = selectedIncident
     ? view.matches.find((item) => item.incident.id === selectedIncident.id)
     : undefined;
@@ -335,7 +365,12 @@ export function MapScreen({
             void searchRoutes();
           }}
         >
-          <div className="route-panel-toolbar">
+          <div
+            className="route-panel-toolbar"
+            onPointerDown={startRouteSwipe}
+            onPointerUp={finishRouteSwipe}
+            onPointerCancel={() => (routeSwipeStart.current = undefined)}
+          >
             {routeFieldsExpanded && <span>ต้นทางและปลายทาง</span>}
             <div className="route-panel-actions">
               {routeFieldsExpanded && (
@@ -363,7 +398,7 @@ export function MapScreen({
                     : 'แสดงช่องต้นทางและปลายทาง'
                 }
                 aria-expanded={routeFieldsExpanded}
-                onClick={() => setRouteFieldsExpanded((expanded) => !expanded)}
+                onClick={toggleRouteFields}
               >
                 <Icon name="chevron" />
               </button>

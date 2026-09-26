@@ -1,4 +1,11 @@
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -135,6 +142,43 @@ describe('รู้ทาง app shell', () => {
     expect(screen.getByRole('textbox', { name: 'ปลายทาง' })).toHaveValue(
       'เซ็นทรัล พระราม 2',
     );
+  });
+
+  it('collapses on a downward swipe and expands on an upward swipe', () => {
+    renderApp();
+    const panel = screen.getByRole('region', { name: 'ค้นหาเส้นทาง' });
+    const toolbar = panel.querySelector('.route-panel-toolbar');
+    expect(toolbar).not.toBeNull();
+
+    fireEvent.pointerDown(toolbar!, {
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.pointerUp(toolbar!, {
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 104,
+      clientY: 170,
+    });
+    expect(
+      screen.getByRole('button', { name: 'แสดงช่องต้นทางและปลายทาง' }),
+    ).toBeVisible();
+
+    fireEvent.pointerDown(toolbar!, {
+      pointerId: 2,
+      isPrimary: true,
+      clientX: 100,
+      clientY: 170,
+    });
+    fireEvent.pointerUp(toolbar!, {
+      pointerId: 2,
+      isPrimary: true,
+      clientX: 96,
+      clientY: 100,
+    });
+    expect(screen.getByRole('textbox', { name: 'ต้นทาง' })).toBeVisible();
   });
 });
 

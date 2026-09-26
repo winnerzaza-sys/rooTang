@@ -321,6 +321,12 @@ select:focus-visible {
   font-family: var(--font-heading);
   font-size: 13px;
   font-weight: 600;
+  touch-action: pan-x;
+  user-select: none;
+  cursor: grab;
+}
+.route-panel-toolbar:active {
+  cursor: grabbing;
 }
 .route-panel-actions {
   display: flex;
