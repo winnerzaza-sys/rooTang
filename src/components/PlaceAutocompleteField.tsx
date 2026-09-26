@@ -48,7 +48,7 @@ export function PlaceAutocompleteField({
   }, [initialValue, onError, onSelect, placeholder, service]);
   // The service owns the slot's children; React must never render into it.
   return (
-    <label>
+    <label className="route-field place-field">
       <span>{label}</span>
       <div className="places-host" aria-busy={loading}>
         {loading && <span>กำลังโหลดช่องค้นหา…</span>}

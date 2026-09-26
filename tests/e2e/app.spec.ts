@@ -108,8 +108,9 @@ test('displays location denied state and selects an area', async ({ page }) => {
   await page.getByRole('button', { name: 'เลือกพื้นที่' }).click();
   await page.getByRole('button', { name: 'ใช้พื้นที่นี้' }).click();
   await expect(
-    page.getByText('เหตุการณ์ภายใน 10 กม. จากพื้นที่ที่เลือก'),
+    page.getByText('เหตุการณ์ล่าสุดรอบตำแหน่งของคุณ จากพื้นที่ที่เลือก'),
   ).toBeVisible();
+  await expect(page.getByText('ภายใน 10 กม.')).toBeVisible();
   await expect(page.getByRole('listitem').first()).toBeVisible();
 });
 

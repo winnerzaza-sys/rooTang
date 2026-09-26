@@ -33,6 +33,10 @@ import {
 import { httpIncidentService } from '../services/incidents/httpIncidentService';
 import { useIncidents } from '../services/incidents/useIncidents';
 import {
+  readLocationConsent,
+  rememberLocationConsent,
+} from '../services/locationConsent';
+import {
   incidents as fixtureIncidents,
   MOCK_USER_LOCATION,
 } from '../test/fixtures';
@@ -74,13 +78,17 @@ export function NearbyScreen({
   const [filter, setFilter] = useState<NearbyFilter>('all');
   const [selected, setSelected] = useState<NearbyIncident | null>(null);
   const [userLocation, setUserLocation] = useState<AppCoordinate>();
-  const [locationState, setLocationState] = useState<LocationState>(
-    production ? 'prompt' : 'ready',
-  );
+  const [locationState, setLocationState] = useState<LocationState>(() => {
+    if (!production) return 'ready';
+    const remembered = readLocationConsent();
+    return remembered === 'accepted'
+      ? 'loading'
+      : remembered === 'later'
+        ? 'later'
+        : 'prompt';
+  });
 
-  async function requestLocation() {
-    if (!production) return;
-    setLocationState('loading');
+  async function loadLocation() {
     try {
       setUserLocation(await browserLocationService.getCurrentPosition());
       setLocationState('ready');
@@ -90,6 +98,41 @@ export function NearbyScreen({
       );
     }
   }
+
+  function requestLocation() {
+    if (!production) return;
+    setLocationState('loading');
+    void loadLocation();
+  }
+
+  function allowLocation() {
+    rememberLocationConsent('accepted');
+    void requestLocation();
+  }
+
+  useEffect(() => {
+    if (!production || area || locationState !== 'loading') return;
+    let active = true;
+    void browserLocationService.getCurrentPosition().then(
+      (location) => {
+        if (!active) return;
+        setUserLocation(location);
+        setLocationState('ready');
+      },
+      (error: unknown) => {
+        if (!active) return;
+        setLocationState(
+          error instanceof LocationServiceError ? error.code : 'unavailable',
+        );
+      },
+    );
+    return () => {
+      active = false;
+    };
+    // This effect only handles consent remembered before this screen mounts.
+    // Button-triggered requests are handled by requestLocation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [area, production]);
 
   const mockLocation =
     demoState === 'location-denied' ? undefined : MOCK_USER_LOCATION;
@@ -141,8 +184,11 @@ export function NearbyScreen({
       if (production && locationState === 'prompt')
         return (
           <LocationPermissionPrompt
-            onAllow={() => void requestLocation()}
-            onLater={() => setLocationState('later')}
+            onAllow={allowLocation}
+            onLater={() => {
+              rememberLocationConsent('later');
+              setLocationState('later');
+            }}
           />
         );
       if (production && locationState === 'later')
@@ -157,7 +203,7 @@ export function NearbyScreen({
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => void requestLocation()}
+                onClick={allowLocation}
               >
                 ใช้ตำแหน่งของฉัน
               </button>
@@ -183,7 +229,7 @@ export function NearbyScreen({
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => void requestLocation()}
+                onClick={allowLocation}
               >
                 อนุญาตตำแหน่ง
               </button>
@@ -256,11 +302,14 @@ export function NearbyScreen({
   return (
     <main className="nearby-screen" id="main-content">
       <div className="feed-heading">
-        <h1>ใกล้ฉัน</h1>
-        <p>
-          เหตุการณ์ภายใน {nearbyConfig.RADIUS_KM} กม.
-          {area ? ` ${originLabel}` : ''}
-        </p>
+        <div>
+          <h1>ใกล้ฉัน</h1>
+          <p>
+            เหตุการณ์ล่าสุดรอบตำแหน่งของคุณ
+            {area ? ` ${originLabel}` : ''}
+          </p>
+        </div>
+        <span className="radius-badge">ภายใน {nearbyConfig.RADIUS_KM} กม.</span>
         {area && (
           <div className="feed-origin-actions">
             <button

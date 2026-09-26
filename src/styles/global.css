@@ -1,8 +1,8 @@
 /* Prompt/Sarabun are linked from index.html so they load in parallel. */
 :root {
   font-family: 'Sarabun', system-ui, sans-serif;
-  color: #10223a;
-  background: #f5f7fa;
+  color: #0f172a;
+  background: #f6f8fb;
   font-synthesis: none;
   --font-heading: 'Prompt', system-ui, sans-serif;
   --font-body: 'Sarabun', system-ui, sans-serif;
@@ -10,20 +10,20 @@
   --color-primary-dark: #0b4eb8;
   --color-primary-soft: #eaf2ff;
   --color-accent: #f59e0b;
-  --color-bg: #f5f7fa;
+  --color-bg: #f6f8fb;
   --color-surface: #fff;
-  --color-text: #10223a;
-  --color-muted: #617086;
-  --color-border: #d7e0eb;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
   /* Form-field outlines need 3:1 against white (WCAG 1.4.11). */
   --color-border-strong: #8494a8;
   /* Focus ring: 7:1 on white and on --color-bg. */
   --color-focus: #0b4eb8;
   --color-success: #16845b;
   --color-danger: #c83e3e;
-  --shadow-sm: 0 4px 14px rgb(17 38 67 / 10%);
-  --shadow-lg: 0 16px 42px rgb(17 38 67 / 18%);
-  --radius-card: 18px;
+  --shadow-sm: 0 8px 24px rgb(15 23 42 / 10%);
+  --shadow-lg: 0 18px 55px rgb(15 23 42 / 16%);
+  --radius-card: 20px;
   --radius-control: 14px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -107,6 +107,59 @@ select:focus-visible {
   background: #fff;
   border-bottom: 1px solid var(--color-border);
 }
+.map-active .app-header {
+  position: absolute;
+  z-index: 30;
+  top: var(--safe-top);
+  left: 0;
+  right: 0;
+  min-height: 72px;
+  padding: 16px 74px 8px 16px;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+.map-active .brand {
+  pointer-events: auto;
+}
+.map-active .brand img {
+  display: none;
+}
+.map-active .brand h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.map-active .brand span {
+  margin-top: 2px;
+  color: #475569;
+  font-size: 13px;
+}
+.map-active .header-tools {
+  display: none;
+}
+.nearby-active .app-header {
+  position: absolute;
+  z-index: 30;
+  top: calc(76px + var(--safe-top));
+  left: 16px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.nearby-active .brand,
+.nearby-active .demo-control {
+  display: none;
+}
+.nearby-active .header-tools {
+  align-items: flex-start;
+}
+.nearby-active .freshness {
+  white-space: normal;
+}
 .brand {
   display: flex;
   align-items: center;
@@ -121,7 +174,8 @@ select:focus-visible {
 .brand div {
   display: grid;
 }
-.brand strong {
+.brand h1 {
+  margin: 0;
   font-size: 21px;
   line-height: 1.2;
 }
@@ -214,14 +268,32 @@ select:focus-visible {
   display: flex;
   flex: 1;
   min-height: 0;
-  padding-bottom: calc(68px + var(--safe-bottom));
+  padding-bottom: calc(78px + var(--safe-bottom));
+}
+.map-top-locate {
+  position: absolute;
+  z-index: 31;
+  top: 15px;
+  right: 16px;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgb(226 232 240 / 90%);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 90%);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(18px);
+  cursor: pointer;
 }
 .route-panel {
   position: absolute;
   z-index: 10;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 76px;
+  left: 16px;
+  right: 16px;
   max-height: calc(100% - 92px);
   pointer-events: none;
 }
@@ -231,12 +303,13 @@ select:focus-visible {
 }
 .route-panel form {
   display: grid;
-  gap: 8px;
-  padding: 14px;
-  border: 1px solid rgb(215 224 235 / 80%);
-  border-radius: var(--radius-card);
-  background: #fff;
-  box-shadow: var(--shadow-sm);
+  gap: 0;
+  padding: 8px 10px;
+  border: 1px solid rgb(255 255 255 / 95%);
+  border-radius: 22px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(24px) saturate(130%);
 }
 .route-panel label {
   display: grid;
@@ -244,15 +317,34 @@ select:focus-visible {
   color: var(--color-muted);
   font-size: 13px;
 }
+.route-panel .route-field {
+  position: relative;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text);
+}
+.route-panel .route-field + .route-field {
+  border-top: 1px solid #edf1f5;
+}
+.route-panel .route-field > span:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .input-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   height: 48px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border-strong);
+  padding: 0 6px;
+  border: 0;
   border-radius: 12px;
-  background: #fbfcfe;
+  background: transparent;
   color: var(--color-primary);
 }
 .input-wrap:focus-within {
@@ -270,12 +362,13 @@ select:focus-visible {
   font-size: 16px;
 }
 .places-host {
+  width: 100%;
   min-height: 48px;
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-border-strong);
+  border: 0;
   border-radius: 12px;
-  background: #fbfcfe;
+  background: transparent;
   overflow: visible;
 }
 .places-slot {
@@ -303,6 +396,16 @@ select:focus-visible {
   background: transparent;
   color: var(--color-primary-dark);
   cursor: pointer;
+}
+.route-panel .primary-button {
+  width: 100%;
+  margin-top: 8px;
+}
+.route-panel .field-error {
+  margin: 7px 6px 0;
+}
+.route-panel .incident-refresh {
+  display: none;
 }
 .google-map-host {
   position: absolute;
@@ -387,7 +490,7 @@ select:focus-visible {
 }
 .mock-map {
   position: absolute;
-  inset: 0 0 calc(68px + var(--safe-bottom)) 0;
+  inset: 0 0 calc(78px + var(--safe-bottom)) 0;
   overflow: hidden;
   background: #e8edf0;
 }
@@ -476,9 +579,8 @@ select:focus-visible {
   height: 44px;
   margin: -22px;
   border: 3px solid white;
-  border-radius: 50% 50% 50% 10%;
+  border-radius: 14px;
   box-shadow: 0 4px 12px rgb(17 38 67 / 28%);
-  transform: rotate(-45deg);
   color: #fff;
   cursor: pointer;
 }
@@ -487,7 +589,6 @@ select:focus-visible {
   font-family: sans-serif;
   font-size: 20px;
   font-weight: 800;
-  transform: rotate(45deg);
 }
 .flood,
 .rain {
@@ -556,7 +657,7 @@ select:focus-visible {
   z-index: 8;
   left: 0;
   right: 0;
-  bottom: calc(68px + var(--safe-bottom));
+  bottom: calc(78px + var(--safe-bottom));
   max-height: 39dvh;
   overflow: auto;
   padding: 8px 16px 18px;
@@ -713,22 +814,41 @@ select:focus-visible {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 20px 16px calc(88px + var(--safe-bottom));
+  padding: calc(20px + var(--safe-top)) 16px calc(96px + var(--safe-bottom));
   background: var(--color-bg);
+}
+.feed-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 8px 12px;
 }
 .feed-heading h1 {
   margin: 0;
   font-size: 24px;
 }
 .feed-heading p {
-  margin: 3px 0 14px;
+  margin: 3px 0 0;
   color: var(--color-muted);
+  font-size: 13px;
+}
+.radius-badge {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .filter-scroll {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  margin: 0 -16px 15px;
+  margin: 18px -16px 14px;
   padding: 3px 16px 7px;
   scrollbar-width: none;
 }
@@ -736,7 +856,7 @@ select:focus-visible {
   display: none;
 }
 .filter-scroll button {
-  min-height: 44px;
+  min-height: 40px;
   flex: none;
   padding: 8px 16px;
   border: 1px solid var(--color-border);
@@ -760,16 +880,16 @@ select:focus-visible {
 }
 .incident-card {
   width: 100%;
-  min-height: 116px;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 44px 1fr 12px;
+  grid-template-columns: 45px 1fr;
   gap: 12px;
   align-items: start;
-  padding: 15px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  padding: 14px;
+  border: 1px solid #e8edf3;
+  border-radius: 20px;
   background: #fff;
-  box-shadow: 0 2px 6px rgb(17 38 67 / 4%);
+  box-shadow: 0 7px 20px rgb(15 23 42 / 4.5%);
   text-align: left;
   cursor: pointer;
 }
@@ -778,15 +898,41 @@ select:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 .card-icon {
-  width: 44px;
-  height: 44px;
+  width: 45px;
+  height: 45px;
   display: grid;
   place-items: center;
   border-radius: 13px;
-  color: #fff;
+  color: var(--color-text);
   font-family: sans-serif;
   font-size: 21px;
   font-weight: 800;
+}
+.incident-card .card-icon.flood,
+.incident-card .card-icon.rain {
+  background: #e0f2fe !important;
+  color: #0369a1;
+}
+.incident-card .card-icon.accident,
+.incident-card .card-icon.fire {
+  background: #fee2e2 !important;
+  color: #b91c1c;
+}
+.incident-card .card-icon.road,
+.incident-card .card-icon.breakdown,
+.incident-card .card-icon.obstruction,
+.incident-card .card-icon.caution,
+.incident-card .card-icon.traffic {
+  background: #fef3c7 !important;
+  color: #92400e;
+}
+.incident-card .card-icon.construction {
+  background: #ffedd5 !important;
+  color: #c2410c;
+}
+.incident-card .card-icon.other {
+  background: #f1f5f9 !important;
+  color: #475569;
 }
 .card-copy {
   min-width: 0;
@@ -819,9 +965,7 @@ select:focus-visible {
   font-size: 13px;
 }
 .card-chevron {
-  align-self: center;
-  color: var(--color-muted);
-  font-size: 24px;
+  display: none;
 }
 .freshness-badge {
   width: fit-content;
@@ -951,22 +1095,22 @@ select:focus-visible {
   left: 0;
   right: 0;
   bottom: 0;
-  min-height: calc(68px + var(--safe-bottom));
+  min-height: calc(78px + var(--safe-bottom));
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 5px 12px var(--safe-bottom);
+  padding: 8px 22px calc(8px + var(--safe-bottom));
   border-top: 1px solid var(--color-border);
-  background: rgb(255 255 255 / 96%);
-  backdrop-filter: blur(12px);
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(24px);
 }
 .bottom-nav a {
-  min-height: 58px;
+  min-height: 54px;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
   gap: 2px;
-  border-radius: 14px;
+  border-radius: 18px;
   color: var(--color-muted);
   font-family: var(--font-heading);
   font-size: 13px;
@@ -1174,6 +1318,7 @@ select:focus-visible {
   font-size: 13px;
 }
 .feed-origin-actions {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1218,6 +1363,27 @@ select:focus-visible {
 }
 
 @media (min-width: 768px) {
+  .map-active .app-header {
+    position: relative;
+    top: auto;
+    min-height: 80px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--color-border);
+    background: #fff;
+    pointer-events: auto;
+  }
+  .map-active .brand img {
+    display: block;
+  }
+  .map-active .brand h1 {
+    font-size: 21px;
+  }
+  .map-active .brand span {
+    font-size: 12px;
+  }
+  .map-active .header-tools {
+    display: flex;
+  }
   .app-header {
     padding-inline: 24px;
   }
@@ -1237,6 +1403,12 @@ select:focus-visible {
     overflow: auto;
     padding: 18px;
     background: var(--color-bg);
+  }
+  .route-panel .incident-refresh {
+    display: inline-flex;
+  }
+  .map-top-locate {
+    display: none;
   }
   .route-panel form {
     position: relative;
@@ -1279,7 +1451,7 @@ select:focus-visible {
     bottom: 20px;
   }
   .nearby-screen {
-    padding: 30px max(24px, calc((100% - 900px) / 2)) 40px;
+    padding: 82px max(24px, calc((100% - 900px) / 2)) 40px;
   }
   .incident-list {
     grid-template-columns: 1fr 1fr;

@@ -93,6 +93,7 @@ export function App() {
   const [areaSelecting, setAreaSelecting] = useState(false);
   const [mapFocus, setMapFocus] = useState<RoadIncident>();
   const [incidentMeta, setIncidentMeta] = useState<IncidentResponseMeta>();
+  const nearbyActive = location.pathname.startsWith('/nearby');
 
   function changeState(value: DemoState) {
     setDemoState(value);
@@ -144,7 +145,9 @@ export function App() {
   );
 
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${nearbyActive ? 'nearby-active' : 'map-active'}`}
+    >
       <a className="skip-link" href="#main-content">
         ข้ามไปยังเนื้อหาหลัก
       </a>
@@ -152,7 +155,7 @@ export function App() {
         <div className="brand">
           <img src="/icons/ru-thang-app-icon-192.png" alt="" />
           <div>
-            <strong>รู้ทาง</strong>
+            <h1>รู้ทาง</h1>
             <span>ดูเหตุการณ์ก่อนออกเดินทาง</span>
           </div>
         </div>

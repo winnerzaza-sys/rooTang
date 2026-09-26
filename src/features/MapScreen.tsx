@@ -28,6 +28,10 @@ import {
 import { httpIncidentService } from '../services/incidents/httpIncidentService';
 import { useIncidents } from '../services/incidents/useIncidents';
 import {
+  readLocationConsent,
+  rememberLocationConsent,
+} from '../services/locationConsent';
+import {
   incidents as fixtureIncidents,
   MOCK_MAP_BOUNDS,
   mockRoutes,
@@ -212,6 +216,12 @@ export function MapScreen({
     }
     if (production && !originPlace) {
       setValidation('');
+      if (readLocationConsent() === 'accepted') {
+        const place = await requestCurrentLocation();
+        if (place && destinationPlace)
+          await performRouteSearch(place, destinationPlace);
+        return;
+      }
       setSearchAfterLocation(true);
       setShowLocationPrompt(true);
       return;
@@ -275,12 +285,27 @@ export function MapScreen({
     onAreaSelected(boundsCenter(bounds));
   }
 
+  function useCurrentLocation() {
+    if (!production) return;
+    setSearchAfterLocation(false);
+    if (readLocationConsent() === 'accepted') void requestCurrentLocation();
+    else setShowLocationPrompt(true);
+  }
+
   const selectedMatch = selectedIncident
     ? view.matches.find((item) => item.incident.id === selectedIncident.id)
     : undefined;
 
   return (
     <main className="map-screen" id="main-content">
+      <button
+        type="button"
+        className="map-top-locate"
+        aria-label="ใช้ตำแหน่งปัจจุบัน"
+        onClick={useCurrentLocation}
+      >
+        <Icon name="locate" />
+      </button>
       <section className="route-panel" aria-label="ค้นหาเส้นทาง">
         <form
           onSubmit={(event) => {
@@ -290,17 +315,6 @@ export function MapScreen({
         >
           {production ? (
             <>
-              <button
-                type="button"
-                className="current-location-button"
-                onClick={() => {
-                  setSearchAfterLocation(false);
-                  setShowLocationPrompt(true);
-                }}
-              >
-                <Icon name="locate" />
-                ใช้ตำแหน่งปัจจุบัน
-              </button>
               <PlaceAutocompleteField
                 label="ต้นทาง"
                 placeholder="ค้นหาต้นทางอื่น"
@@ -337,7 +351,7 @@ export function MapScreen({
             </>
           ) : (
             <>
-              <label>
+              <label className="route-field origin-field">
                 <span>ต้นทาง</span>
                 <span className="input-wrap">
                   <Icon name="locate" />
@@ -348,7 +362,7 @@ export function MapScreen({
                   />
                 </span>
               </label>
-              <label>
+              <label className="route-field destination-field">
                 <span>ปลายทาง</span>
                 <span className="input-wrap">
                   <Icon name="pin" />
@@ -381,7 +395,7 @@ export function MapScreen({
           {production && (
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-button incident-refresh"
               disabled={offline}
               onClick={() => void live.refresh()}
             >
@@ -516,6 +530,7 @@ export function MapScreen({
         <LocationPermissionPrompt
           mode="dialog"
           onAllow={() => {
+            rememberLocationConsent('accepted');
             setShowLocationPrompt(false);
             void requestCurrentLocation().then((place) => {
               if (place && searchAfterLocation && destinationPlace)
@@ -524,6 +539,7 @@ export function MapScreen({
             });
           }}
           onLater={() => {
+            rememberLocationConsent('later');
             setShowLocationPrompt(false);
             setSearchAfterLocation(false);
           }}

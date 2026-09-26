@@ -325,8 +325,9 @@ describe('Nearby feed', () => {
       within(picker).getByRole('button', { name: 'ใช้พื้นที่นี้' }),
     );
     expect(
-      screen.getByText('เหตุการณ์ภายใน 10 กม. จากพื้นที่ที่เลือก'),
+      screen.getByText('เหตุการณ์ล่าสุดรอบตำแหน่งของคุณ จากพื้นที่ที่เลือก'),
     ).toBeInTheDocument();
+    expect(screen.getByText('ภายใน 10 กม.')).toBeInTheDocument();
     expect(
       screen.getByRole('list', { name: 'รายการเหตุการณ์ใกล้ฉัน' }),
     ).toBeInTheDocument();

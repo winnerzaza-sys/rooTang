@@ -88,6 +88,7 @@ const pins = () =>
     .map((item) => item.textContent);
 
 beforeEach(() => {
+  window.localStorage.clear();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(FIXTURE_NOW);
   mocks.computeRoutes.mockResolvedValue({ routes: mockRoutes, meta });

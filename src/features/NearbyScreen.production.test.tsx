@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IncidentResponseMeta } from '../domain/types';
@@ -55,6 +55,7 @@ function renderNearby(props: Partial<NearbyScreenProps> = {}) {
 }
 
 beforeEach(() => {
+  window.localStorage.clear();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(FIXTURE_NOW);
   mocks.getCurrentPosition.mockResolvedValue(MOCK_USER_LOCATION);
@@ -91,6 +92,23 @@ describe('Nearby feed with backend data', () => {
     expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
       'พบรายงาน 8 รายการภายใน 10 กิโลเมตร',
     );
+  });
+
+  it('reuses the location choice without showing the prompt again', async () => {
+    const user = userEvent.setup();
+    renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
+    await screen.findByRole('list', { name: 'รายการเหตุการณ์ใกล้ฉัน' });
+
+    cleanup();
+    mocks.getCurrentPosition.mockClear();
+    renderNearby();
+
+    expect(screen.queryByText('ใช้ตำแหน่งของคุณ')).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('list', { name: 'รายการเหตุการณ์ใกล้ฉัน' }),
+    ).toBeInTheDocument();
+    expect(mocks.getCurrentPosition).toHaveBeenCalledOnce();
   });
 
   it('does not request browser permission when the user chooses later', async () => {
@@ -141,8 +159,9 @@ describe('Nearby feed with backend data', () => {
     await screen.findByRole('list', { name: 'รายการเหตุการณ์ใกล้ฉัน' });
     expect(mocks.getCurrentPosition).not.toHaveBeenCalled();
     expect(
-      screen.getByText('เหตุการณ์ภายใน 10 กม. จากพื้นที่ที่เลือก'),
+      screen.getByText('เหตุการณ์ล่าสุดรอบตำแหน่งของคุณ จากพื้นที่ที่เลือก'),
     ).toBeInTheDocument();
+    expect(screen.getByText('ภายใน 10 กม.')).toBeInTheDocument();
     expect(
       screen.getAllByRole('button', { name: /^สิ่งกีดขวาง:/ })[0],
     ).toBeInTheDocument();
