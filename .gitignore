@@ -9,3 +9,5 @@ test-results
 .playwright-cli
 output/playwright
 dist-e2e
+.vercel
+.env*
