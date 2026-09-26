@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IncidentPin } from '../domain/matching/routeAnalysis';
@@ -51,11 +51,21 @@ vi.mock('../components/GoogleMapCanvas', () => ({
   GoogleMapCanvas: ({
     selectedRouteId,
     pins,
+    currentLocation,
   }: {
     selectedRouteId?: string;
     pins: IncidentPin[];
+    currentLocation?: { latitude: number; longitude: number };
   }) => (
-    <ul aria-label="google-map-pins" data-selected-route={selectedRouteId}>
+    <ul
+      aria-label="google-map-pins"
+      data-selected-route={selectedRouteId}
+      data-current-location={
+        currentLocation
+          ? `${currentLocation.latitude},${currentLocation.longitude}`
+          : undefined
+      }
+    >
       {pins.map((pin) => (
         <li key={pin.incident.id}>{pin.incident.id}</li>
       ))}
@@ -120,6 +130,11 @@ describe('MapScreen with mocked Google and backend services', () => {
       within(dialog).getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }),
     );
     expect(mocks.getCurrentPosition).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('list', { name: 'google-map-pins' }),
+      ).toHaveAttribute('data-current-location', '13.7563,100.5018'),
+    );
   });
 
   it('queries the route box, matches, and keeps pins in sync with the selection', async () => {

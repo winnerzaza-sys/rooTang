@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   analyzeRoutes,
@@ -25,6 +25,15 @@ const created = vi.hoisted(() => ({
   markers: [] as FakeMarker[],
   lines: [] as FakeLine[],
 }));
+const mapState = vi.hoisted(
+  (): {
+    zoom: number;
+    listeners: Record<string, () => void>;
+  } => ({
+    zoom: 11,
+    listeners: {},
+  }),
+);
 
 vi.mock('../services/googleMaps/loader', () => ({
   loadGoogleLibrary: (name: string) =>
@@ -32,7 +41,9 @@ vi.mock('../services/googleMaps/loader', () => ({
       name === 'maps'
         ? {
             Map: class {
-              addListener() {}
+              addListener(name: string, listener: () => void) {
+                mapState.listeners[name] = listener;
+              }
               fitBounds() {}
               getBounds() {
                 return undefined;
@@ -40,7 +51,7 @@ vi.mock('../services/googleMaps/loader', () => ({
               panTo() {}
               setZoom() {}
               getZoom() {
-                return 14;
+                return mapState.zoom;
               }
             },
           }
@@ -51,6 +62,8 @@ vi.mock('../services/googleMaps/loader', () => ({
 function installFakeGoogle() {
   created.markers = [];
   created.lines = [];
+  mapState.zoom = 11;
+  mapState.listeners = {};
   vi.stubGlobal('google', {
     maps: {
       event: { clearInstanceListeners: () => undefined },
@@ -157,5 +170,51 @@ describe('GoogleMapCanvas', () => {
     expect(
       created.markers.every((marker) => marker.content.tagName === 'BUTTON'),
     ).toBe(true);
+  });
+
+  it('keeps existing incident markers while zoom stays in the same cluster level', async () => {
+    config.googleMapsConfig.apiKey = 'test-key';
+    installFakeGoogle();
+    const primary = selectRouteView(analyzed, 'route-primary', incidents);
+    render(
+      <GoogleMapCanvas
+        routes={analyzed}
+        selectedRouteId="route-primary"
+        pins={primary.pins}
+        now={FIXTURE_NOW}
+        onBounds={noop}
+        onIncident={noop}
+      />,
+    );
+    await waitFor(() => expect(visibleMarkerLabels()).toHaveLength(3));
+    const initialMarkers = [...created.markers];
+
+    mapState.zoom = 12;
+    act(() => mapState.listeners.zoom_changed?.());
+    expect(created.markers).toEqual(initialMarkers);
+
+    mapState.zoom = 13;
+    act(() => mapState.listeners.zoom_changed?.());
+    await waitFor(() => expect(visibleMarkerLabels()).toHaveLength(4));
+    expect(created.markers.filter((marker) => marker.map)).toHaveLength(4);
+  });
+
+  it('draws the current location independently from incident markers', async () => {
+    config.googleMapsConfig.apiKey = 'test-key';
+    installFakeGoogle();
+    render(
+      <GoogleMapCanvas
+        routes={[]}
+        pins={[]}
+        currentLocation={{ latitude: 13.7563, longitude: 100.5018 }}
+        now={FIXTURE_NOW}
+        onBounds={noop}
+        onIncident={noop}
+      />,
+    );
+    await waitFor(() =>
+      expect(visibleMarkerLabels()).toContain('ตำแหน่งปัจจุบัน'),
+    );
+    expect(created.markers).toHaveLength(1);
   });
 });

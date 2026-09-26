@@ -26,6 +26,7 @@ export function MockMapCanvas({
   selectedRouteId,
   pins,
   selectedIncidentId,
+  currentLocation,
   now,
   error,
   showCenter,
@@ -36,6 +37,7 @@ export function MockMapCanvas({
   selectedRouteId?: string;
   pins: IncidentPin[];
   selectedIncidentId?: string;
+  currentLocation?: AppCoordinate;
   now: number;
   error?: boolean;
   showCenter?: boolean;
@@ -96,6 +98,17 @@ export function MockMapCanvas({
                 </button>
               );
             })}
+          {currentLocation && containsCoordinate(bounds, currentLocation) && (
+            <span
+              className="mock-current-location"
+              style={{
+                left: `${project(bounds, currentLocation).x}%`,
+                top: `${project(bounds, currentLocation).y}%`,
+              }}
+              role="img"
+              aria-label="ตำแหน่งปัจจุบัน"
+            />
+          )}
           <div className="map-label label-one">ถนนพระราม 2</div>
           <div className="map-label label-two">ถนนกัลปพฤกษ์</div>
           {showCenter && <span className="map-crosshair" aria-hidden="true" />}

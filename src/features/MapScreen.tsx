@@ -34,6 +34,7 @@ import {
 import {
   incidents as fixtureIncidents,
   MOCK_MAP_BOUNDS,
+  MOCK_USER_LOCATION,
   mockRoutes,
 } from '../test/fixtures';
 import { Icon } from '../components/Icons';
@@ -86,6 +87,7 @@ export function MapScreen({
   const [searching, setSearching] = useState(false);
   const [validation, setValidation] = useState('');
   const [originPlace, setOriginPlace] = useState<AppPlace>();
+  const [userLocation, setUserLocation] = useState<AppCoordinate>();
   const [destinationPlace, setDestinationPlace] = useState<AppPlace>();
   const [locationError, setLocationError] = useState<string>();
   const [placesError, setPlacesError] = useState(false);
@@ -256,6 +258,7 @@ export function MapScreen({
   async function requestCurrentLocation(): Promise<AppPlace | undefined> {
     try {
       const coordinate = await browserLocationService.getCurrentPosition();
+      setUserLocation(coordinate);
       const place = {
         placeId: '',
         label: 'ตำแหน่งปัจจุบัน',
@@ -436,6 +439,7 @@ export function MapScreen({
           pins={pins}
           selectedIncidentId={selectedIncident?.id ?? focusIncident?.id}
           focus={focusIncident}
+          currentLocation={userLocation}
           now={now}
           showCenter={areaSelecting}
           onBounds={onBounds}
@@ -448,6 +452,9 @@ export function MapScreen({
           selectedRouteId={view.selectedRoute?.id}
           pins={pins}
           selectedIncidentId={selectedIncident?.id ?? focusIncident?.id}
+          currentLocation={
+            demoState === 'location-denied' ? undefined : MOCK_USER_LOCATION
+          }
           now={now}
           error={demoState === 'map-error'}
           showCenter={areaSelecting}
