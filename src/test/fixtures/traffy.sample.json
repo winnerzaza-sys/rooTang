@@ -1,0 +1,28 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [100.66119, 13.79735] },
+      "properties": {
+        "ticket_id": "sample-traffic-1",
+        "problem_type_fondue": ["น้ำท่วม"],
+        "description": "มีรายงานน้ำท่วมในซอย",
+        "address": "เขตบึงกุ่ม กรุงเทพมหานคร",
+        "state_type_latest": "start",
+        "timestamp": "2026-09-26 09:28:20",
+        "last_activity": "2026-09-26 09:30:00"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [100.6, 13.8] },
+      "properties": {
+        "ticket_id": "resolved",
+        "problem_type_fondue": ["ถนน"],
+        "description": "ซ่อมแล้ว",
+        "state_type_latest": "finish"
+      }
+    }
+  ]
+}

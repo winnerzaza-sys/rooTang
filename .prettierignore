@@ -1,0 +1,11 @@
+dist
+node_modules
+playwright-report
+test-results
+package-lock.json
+AGENTS.md
+IMPLEMENTATION_PLAN.md
+UI_DESIGN.md
+.playwright-cli
+output/playwright
+dist-e2e

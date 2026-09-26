@@ -1,0 +1,185 @@
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { IncidentPin } from '../domain/matching/routeAnalysis';
+import type { AppBounds, IncidentResponseMeta } from '../domain/types';
+import { FIXTURE_NOW, incidents, mockRoutes } from '../test/fixtures';
+import { MapScreen } from './MapScreen';
+
+const mocks = vi.hoisted(() => ({
+  computeRoutes: vi.fn(),
+  getIncidents: vi.fn(),
+}));
+
+vi.mock('../services/googleMaps/config', () => ({
+  googleMapsConfig: { apiKey: 'test-key', enabled: true, mapId: undefined },
+}));
+vi.mock('../services/googleMaps/googleDirectionsService', () => ({
+  googleDirectionsService: { computeRoutes: mocks.computeRoutes },
+}));
+vi.mock('../services/incidents/httpIncidentService', () => ({
+  httpIncidentService: { getIncidents: mocks.getIncidents },
+}));
+vi.mock('../services/googleMaps/googlePlacesService', () => ({
+  googlePlacesService: {
+    createAutocomplete: (
+      _host: HTMLElement,
+      options: {
+        placeholder: string;
+        onSelect: (place: unknown) => void;
+      },
+    ) => {
+      options.onSelect({
+        placeId: options.placeholder,
+        label: options.placeholder,
+        coordinate: { latitude: 13.66, longitude: 100.42 },
+      });
+      return Promise.resolve(() => undefined);
+    },
+  },
+}));
+// Stand-in for Google Maps: exposes exactly what the map would draw.
+vi.mock('../components/GoogleMapCanvas', () => ({
+  GoogleMapCanvas: ({
+    selectedRouteId,
+    pins,
+  }: {
+    selectedRouteId?: string;
+    pins: IncidentPin[];
+  }) => (
+    <ul aria-label="google-map-pins" data-selected-route={selectedRouteId}>
+      {pins.map((pin) => (
+        <li key={pin.incident.id}>{pin.incident.id}</li>
+      ))}
+    </ul>
+  ),
+}));
+
+const meta: IncidentResponseMeta = {
+  generatedAt: '2026-09-26T02:59:00.000Z',
+  partial: false,
+  providers: [],
+};
+
+function renderMap() {
+  render(
+    <MapScreen
+      demoState="normal"
+      offline={false}
+      onClearFocus={() => undefined}
+      areaSelecting={false}
+      onAreaSelected={() => undefined}
+      onCancelAreaSelect={() => undefined}
+    />,
+  );
+}
+
+const pins = () =>
+  within(screen.getByRole('list', { name: 'google-map-pins' }))
+    .queryAllByRole('listitem')
+    .map((item) => item.textContent);
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(FIXTURE_NOW);
+  mocks.computeRoutes.mockResolvedValue({ routes: mockRoutes, meta });
+});
+afterEach(() => {
+  vi.useRealTimers();
+  mocks.computeRoutes.mockReset();
+  mocks.getIncidents.mockReset();
+});
+
+describe('MapScreen with mocked Google and backend services', () => {
+  it('queries the route box, matches, and keeps pins in sync with the selection', async () => {
+    let resolveRouteIncidents: (value: unknown) => void = () => undefined;
+    mocks.getIncidents.mockImplementation((query: AppBounds) =>
+      query.north < 13.8
+        ? new Promise((resolve) => {
+            resolveRouteIncidents = resolve;
+          })
+        : Promise.resolve({ incidents, meta }),
+    );
+    const user = userEvent.setup();
+    renderMap();
+    await screen.findByText('ต้นทาง: ค้นหาต้นทาง');
+    await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+
+    // Route incidents are still loading: no findings, no "none found" claim.
+    expect(
+      await screen.findByText('กำลังตรวจสอบรายงานใกล้เส้นทาง…'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('ยังไม่พบรายงานเหตุการณ์ใกล้เส้นทางนี้'),
+    ).not.toBeInTheDocument();
+    expect(pins()).toEqual([]);
+    const routeQuery = mocks.getIncidents.mock.calls.at(-1)![0] as AppBounds;
+    expect(routeQuery.north).toBeGreaterThan(13.735);
+    expect(routeQuery.south).toBeLessThan(13.66);
+
+    resolveRouteIncidents({ incidents, meta });
+    expect(
+      await screen.findByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 4 จุด'),
+    ).toBeInTheDocument();
+    expect(pins()).toEqual([
+      'longdo:flood-01',
+      'traffy:flood-07',
+      'longdo:accident-02',
+      'traffy:road-03',
+    ]);
+    expect(screen.getByText(/ไม่ใช่ข้อมูลสด/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: /เส้นทางเลี่ยง/ }));
+    expect(screen.getByText('49 นาที')).toBeInTheDocument();
+    expect(
+      screen.getByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 3 จุด'),
+    ).toBeInTheDocument();
+    expect(pins()).toEqual([
+      'traffy:construction-04',
+      'longdo:breakdown-05',
+      'traffy:obstruction-06',
+    ]);
+    expect(
+      screen.getByRole('list', { name: 'google-map-pins' }),
+    ).toHaveAttribute('data-selected-route', 'route-alternative');
+  });
+
+  it('shows partial data inside the route results', async () => {
+    mocks.getIncidents.mockResolvedValue({
+      incidents,
+      meta: { ...meta, partial: true },
+    });
+    const user = userEvent.setup();
+    renderMap();
+    await screen.findByText('ต้นทาง: ค้นหาต้นทาง');
+    await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+    const results = await screen.findByRole('region', {
+      name: 'ผลการค้นหาเส้นทาง',
+    });
+    expect(
+      await within(results).findByText('ข้อมูลบางแหล่งยังไม่พร้อม'),
+    ).toBeInTheDocument();
+  });
+
+  it('reports a route analysis error instead of "no incidents"', async () => {
+    mocks.getIncidents.mockImplementation((query: AppBounds) =>
+      query.north < 13.8
+        ? Promise.reject(new Error('503'))
+        : Promise.resolve({ incidents, meta }),
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    renderMap();
+    await screen.findByText('ต้นทาง: ค้นหาต้นทาง');
+    await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+    expect(
+      await screen.findByText('ยังตรวจสอบรายงานเหตุการณ์ตามเส้นทางไม่ได้'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('ผลนี้ไม่ได้หมายความว่าไม่มีเหตุการณ์บนเส้นทาง'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('ยังไม่พบรายงานเหตุการณ์ใกล้เส้นทางนี้'),
+    ).not.toBeInTheDocument();
+  });
+});

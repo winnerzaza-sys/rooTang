@@ -1,0 +1,14 @@
+[
+  {
+    "eid": "sample-flood-1",
+    "title": "มีรายงานน้ำท่วม ถนนพัฒนาการ",
+    "description": "น้ำรอการระบาย",
+    "latitude": "13.737",
+    "longitude": "100.624",
+    "type": "6",
+    "start": "2026-09-26 09:00:00",
+    "stop": "2026-09-26 11:00:00",
+    "severity": 1
+  },
+  { "eid": "invalid", "title": "missing coordinate", "type": "3" }
+]
