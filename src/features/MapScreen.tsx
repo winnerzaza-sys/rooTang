@@ -34,6 +34,7 @@ import {
 } from '../test/fixtures';
 import { Icon } from '../components/Icons';
 import { IncidentDetailSheet } from '../components/IncidentDetailSheet';
+import { LocationPermissionPrompt } from '../components/LocationPermissionPrompt';
 import { PlaceAutocompleteField } from '../components/PlaceAutocompleteField';
 import { GoogleMapCanvas } from '../components/GoogleMapCanvas';
 import { MockMapCanvas } from '../components/MockMapCanvas';
@@ -72,7 +73,7 @@ export function MapScreen({
   const production = googleMapsConfig.enabled;
   const now = useNow();
   const [origin, setOrigin] = useState('ตำแหน่งปัจจุบัน');
-  const [destination, setDestination] = useState('เซ็นทรัล พระราม 2');
+  const [destination, setDestination] = useState('');
   const [routes, setRoutes] = useState<RouteOption[]>(NO_ROUTES);
   const [selectedRouteId, setSelectedRouteId] = useState<string>();
   const [selectedIncident, setSelectedIncident] = useState<RoadIncident | null>(
@@ -84,6 +85,8 @@ export function MapScreen({
   const [destinationPlace, setDestinationPlace] = useState<AppPlace>();
   const [locationError, setLocationError] = useState<string>();
   const [placesError, setPlacesError] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [searchAfterLocation, setSearchAfterLocation] = useState(false);
   const [viewport, setViewport] = useState<AppBounds>({
     north: 13.95,
     south: 13.55,
@@ -173,17 +176,44 @@ export function MapScreen({
     if (production) onIncidentMeta?.(live.meta);
   }, [live.meta, onIncidentMeta, production]);
 
+  async function performRouteSearch(
+    resolvedOrigin: AppPlace,
+    resolvedDestination: AppPlace,
+  ) {
+    setSearching(true);
+    try {
+      const result = await googleDirectionsService.computeRoutes({
+        origin: resolvedOrigin,
+        destination: resolvedDestination,
+      });
+      if (!result.routes.length) {
+        setValidation('ไม่พบเส้นทาง ลองตรวจสอบต้นทางหรือปลายทาง');
+        return;
+      }
+      setRoutes(result.routes);
+      setSelectedRouteId(result.routes[0]?.id);
+      onClearFocus();
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Route search failed', error);
+      setValidation('ยังค้นหาเส้นทางไม่ได้ กรุณาลองใหม่');
+    } finally {
+      setSearching(false);
+    }
+  }
+
   async function searchRoutes() {
-    if (
-      production
-        ? !originPlace || !destinationPlace
-        : !origin.trim() || !destination.trim()
-    ) {
-      setValidation(
-        production
-          ? 'กรุณาเลือกต้นทางและปลายทางจากรายการสถานที่'
-          : 'กรุณาระบุต้นทางและปลายทาง',
-      );
+    if (production && !destinationPlace) {
+      setValidation('กรุณาเลือกปลายทางจากรายการสถานที่');
+      return;
+    }
+    if (!production && (!origin.trim() || !destination.trim())) {
+      setValidation('กรุณาระบุต้นทางและปลายทาง');
+      return;
+    }
+    if (production && !originPlace) {
+      setValidation('');
+      setSearchAfterLocation(true);
+      setShowLocationPrompt(true);
       return;
     }
     setValidation('');
@@ -213,11 +243,17 @@ export function MapScreen({
     }
   }
 
-  async function requestCurrentLocation() {
+  async function requestCurrentLocation(): Promise<AppPlace | undefined> {
     try {
       const coordinate = await browserLocationService.getCurrentPosition();
-      setOriginPlace({ placeId: '', label: 'ตำแหน่งปัจจุบัน', coordinate });
+      const place = {
+        placeId: '',
+        label: 'ตำแหน่งปัจจุบัน',
+        coordinate,
+      };
+      setOriginPlace(place);
       setLocationError(undefined);
+      return place;
     } catch (error) {
       const code =
         error instanceof LocationServiceError ? error.code : 'unavailable';
@@ -228,6 +264,7 @@ export function MapScreen({
             ? 'ค้นหาตำแหน่งไม่ทันเวลา กรุณาลองใหม่'
             : 'ยังระบุตำแหน่งไม่ได้',
       );
+      return undefined;
     }
   }
 
@@ -256,14 +293,18 @@ export function MapScreen({
               <button
                 type="button"
                 className="current-location-button"
-                onClick={() => void requestCurrentLocation()}
+                onClick={() => {
+                  setSearchAfterLocation(false);
+                  setShowLocationPrompt(true);
+                }}
               >
                 <Icon name="locate" />
                 ใช้ตำแหน่งปัจจุบัน
               </button>
               <PlaceAutocompleteField
                 label="ต้นทาง"
-                placeholder="ค้นหาต้นทาง"
+                placeholder="ค้นหาต้นทางอื่น"
+                initialValue="ตำแหน่งปัจจุบัน"
                 service={googlePlacesService}
                 onSelect={setOriginPlace}
                 onError={onPlacesError}
@@ -315,6 +356,7 @@ export function MapScreen({
                     value={destination}
                     onChange={(event) => setDestination(event.target.value)}
                     aria-label="ปลายทาง"
+                    placeholder="จะไปที่ไหน?"
                   />
                 </span>
               </label>
@@ -325,15 +367,17 @@ export function MapScreen({
               {validation}
             </p>
           )}
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={searching || offline}
-          >
-            {searching || demoState === 'loading'
-              ? 'กำลังค้นหาเส้นทาง…'
-              : 'ค้นหาเส้นทาง'}
-          </button>
+          {(production ? destinationPlace : destination.trim()) && (
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={searching || offline}
+            >
+              {searching || demoState === 'loading'
+                ? 'กำลังค้นหาเส้นทาง…'
+                : 'ค้นหาเส้นทาง'}
+            </button>
+          )}
           {production && (
             <button
               type="button"
@@ -466,6 +510,23 @@ export function MapScreen({
           match={selectedMatch}
           duplicateCandidateCount={selectedMatch?.duplicateCandidateIds.length}
           onClose={() => setSelectedIncident(null)}
+        />
+      )}
+      {showLocationPrompt && (
+        <LocationPermissionPrompt
+          mode="dialog"
+          onAllow={() => {
+            setShowLocationPrompt(false);
+            void requestCurrentLocation().then((place) => {
+              if (place && searchAfterLocation && destinationPlace)
+                void performRouteSearch(place, destinationPlace);
+              setSearchAfterLocation(false);
+            });
+          }}
+          onLater={() => {
+            setShowLocationPrompt(false);
+            setSearchAfterLocation(false);
+          }}
         />
       )}
     </main>

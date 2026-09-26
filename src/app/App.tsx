@@ -153,7 +153,7 @@ export function App() {
           <img src="/icons/ru-thang-app-icon-192.png" alt="" />
           <div>
             <strong>รู้ทาง</strong>
-            <span>รู้ก่อนเลือกเส้นทาง</span>
+            <span>ดูเหตุการณ์ก่อนออกเดินทาง</span>
           </div>
         </div>
         <div className="header-tools">

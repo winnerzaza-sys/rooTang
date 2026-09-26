@@ -8,6 +8,7 @@ export const googlePlacesService: PlacesService = {
       includedRegionCodes: ['th'],
     });
     element.placeholder = options.placeholder;
+    element.value = options.initialValue ?? '';
     element.setAttribute('aria-label', options.placeholder);
     const handleSelection = async (event: Event) => {
       try {

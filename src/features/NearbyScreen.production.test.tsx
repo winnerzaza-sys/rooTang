@@ -69,7 +69,13 @@ afterEach(() => {
 
 describe('Nearby feed with backend data', () => {
   it('requests a 10 km box around the user and sorts by distance', async () => {
+    const user = userEvent.setup();
     renderNearby();
+    expect(mocks.getCurrentPosition).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/รู้ทางใช้ตำแหน่งเพื่อแสดงเหตุการณ์ใกล้คุณ/),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     const list = await screen.findByRole('list', {
       name: 'รายการเหตุการณ์ใกล้ฉัน',
     });
@@ -87,12 +93,21 @@ describe('Nearby feed with backend data', () => {
     );
   });
 
+  it('does not request browser permission when the user chooses later', async () => {
+    const user = userEvent.setup();
+    renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ไว้ทีหลัง' }));
+    expect(mocks.getCurrentPosition).not.toHaveBeenCalled();
+    expect(screen.getByText('เลือกดูเหตุการณ์ได้ภายหลัง')).toBeInTheDocument();
+  });
+
   it('shows the permission-denied state with the area selection flow', async () => {
     mocks.getCurrentPosition.mockRejectedValue(
       new LocationServiceError('denied'),
     );
     const user = userEvent.setup();
     const handlers = renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     expect(
       await screen.findByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้'),
     ).toBeInTheDocument();
@@ -110,6 +125,7 @@ describe('Nearby feed with backend data', () => {
       .mockResolvedValueOnce(MOCK_USER_LOCATION);
     const user = userEvent.setup();
     renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     expect(
       await screen.findByText(/ค้นหาตำแหน่งไม่ทันเวลา/),
     ).toBeInTheDocument();
@@ -137,7 +153,9 @@ describe('Nearby feed with backend data', () => {
       incidents: incidents.filter((item) => item.provider === 'longdo'),
       meta: meta(true),
     });
+    const user = userEvent.setup();
     renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     expect(
       await screen.findByText('ข้อมูลบางแหล่งยังไม่พร้อม'),
     ).toBeInTheDocument();
@@ -153,7 +171,9 @@ describe('Nearby feed with backend data', () => {
       incidents: incidents.filter((item) => item.category === 'flood'),
       meta: meta(),
     });
+    const user = userEvent.setup();
     renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     const group = await screen.findByRole('group', {
       name: 'กรองประเภทเหตุการณ์',
     });
@@ -166,7 +186,9 @@ describe('Nearby feed with backend data', () => {
 
   it('shows the empty state without claiming the area is clear', async () => {
     mocks.getIncidents.mockResolvedValue({ incidents: [], meta: meta() });
+    const user = userEvent.setup();
     renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     expect(
       await screen.findByText('ยังไม่พบรายงานในบริเวณนี้'),
     ).toBeInTheDocument();
@@ -185,6 +207,7 @@ describe('Nearby feed with backend data', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const user = userEvent.setup();
     renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('ยังโหลดรายการใกล้ฉันไม่ได้');
     await user.click(within(alert).getByRole('button', { name: 'ลองใหม่' }));
@@ -196,14 +219,17 @@ describe('Nearby feed with backend data', () => {
   it('shows the offline state when there is no loaded data', async () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     renderNearby({ offline: true });
-    expect(await screen.findByText('คุณกำลังออฟไลน์')).toBeInTheDocument();
+    expect(await screen.findByText('ใช้ตำแหน่งของคุณ')).toBeInTheDocument();
     expect(mocks.getIncidents).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'อัปเดต' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }),
+    ).toBeEnabled();
   });
 
   it('opens details and hands the incident to the map', async () => {
     const user = userEvent.setup();
     const handlers = renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     await user.click(
       (await screen.findAllByRole('button', { name: /^น้ำท่วม:/ }))[0]!,
     );

@@ -10,21 +10,27 @@ const mockMap = (page: Page) =>
 const routeResults = (page: Page) =>
   page.getByRole('region', { name: 'ผลการค้นหาเส้นทาง' });
 
+async function enterDestination(page: Page) {
+  await page
+    .getByRole('textbox', { name: 'ปลายทาง' })
+    .fill('เซ็นทรัล พระราม 2');
+}
+
 test('switches between Map and Nearby', async ({ page }) => {
   await page.goto('/');
+  await enterDestination(page);
   await expect(
     page.getByRole('button', { name: 'ค้นหาเส้นทาง' }),
   ).toBeVisible();
   await page.getByRole('link', { name: /ใกล้ฉัน/ }).click();
   await expect(page.getByRole('heading', { name: 'ใกล้ฉัน' })).toBeVisible();
   await page.getByRole('link', { name: /แผนที่/ }).click();
-  await expect(
-    page.getByRole('button', { name: 'ค้นหาเส้นทาง' }),
-  ).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'ปลายทาง' })).toBeVisible();
 });
 
 test('searches a mock route and shows ordered findings', async ({ page }) => {
   await page.goto('/');
+  await enterDestination(page);
   await page.getByRole('button', { name: 'ค้นหาเส้นทาง' }).click();
   await expect(page.getByText('42 นาที', { exact: true })).toBeVisible();
   await expect(
@@ -42,6 +48,7 @@ test('searches a mock route and shows ordered findings', async ({ page }) => {
 
 test('changes route markers and findings together', async ({ page }) => {
   await page.goto('/');
+  await enterDestination(page);
   await page.getByRole('button', { name: 'ค้นหาเส้นทาง' }).click();
   await page.getByRole('radio', { name: /เส้นทางเลี่ยง/ }).click();
   await expect(page.getByText('49 นาที', { exact: true })).toBeVisible();
@@ -127,6 +134,7 @@ test('keeps Nearby incidents ordered by distance', async ({ page }) => {
 
 test('shows offline behavior', async ({ page }) => {
   await page.goto('/?state=offline');
+  await enterDestination(page);
   await expect(page.getByText('คุณกำลังออฟไลน์')).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'ค้นหาเส้นทาง' }),

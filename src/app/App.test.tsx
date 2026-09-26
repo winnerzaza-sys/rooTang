@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FIXTURE_NOW } from '../test/fixtures';
 import { App } from './App';
 
+vi.mock('../services/googleMaps/config', () => ({
+  googleMapsConfig: { apiKey: '', enabled: false, mapId: undefined },
+}));
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(FIXTURE_NOW);
@@ -36,6 +40,10 @@ const pinLabels = () =>
 async function searchRoute() {
   const user = userEvent.setup();
   renderApp();
+  await user.type(
+    screen.getByRole('textbox', { name: 'ปลายทาง' }),
+    'เซ็นทรัล พระราม 2',
+  );
   await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
   await screen.findByText('42 นาที');
   return user;
@@ -63,6 +71,21 @@ describe('รู้ทาง app shell', () => {
       'aria-current',
       'page',
     );
+  });
+
+  it('waits for a destination before showing the route action', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    expect(
+      screen.queryByRole('button', { name: 'ค้นหาเส้นทาง' }),
+    ).not.toBeInTheDocument();
+    await user.type(
+      screen.getByRole('textbox', { name: 'ปลายทาง' }),
+      'อนุสาวรีย์ชัย',
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'ปลายทาง' }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -280,7 +303,7 @@ describe('Nearby feed', () => {
     );
     await user.click(screen.getByRole('button', { name: 'ดูตำแหน่งบนแผนที่' }));
     expect(
-      screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }),
+      screen.getByRole('textbox', { name: 'ปลายทาง' }),
     ).toBeInTheDocument();
     const focused = within(map()).getByRole('button', {
       name: /^มีรายงานงานก่อสร้าง/,
@@ -331,7 +354,7 @@ describe('system states', () => {
     cleanup();
     renderApp('/?state=offline');
     expect(screen.getByText('คุณกำลังออฟไลน์')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'ค้นหาเส้นทาง' })).toBeNull();
     cleanup();
     renderApp('/nearby?state=nearby-empty');
     expect(screen.getByText('ยังไม่พบรายงานในบริเวณนี้')).toBeInTheDocument();
@@ -352,7 +375,7 @@ describe('system states', () => {
       window.dispatchEvent(new Event('offline'));
     });
     expect(screen.getByText('คุณกำลังออฟไลน์')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'ค้นหาเส้นทาง' })).toBeNull();
     onLine.mockRestore();
   });
 });

@@ -31,6 +31,7 @@ export interface PlacesService {
     host: HTMLElement,
     options: {
       placeholder: string;
+      initialValue?: string;
       onSelect: (place: AppPlace) => void;
       onError: () => void;
     },

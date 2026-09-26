@@ -5,12 +5,14 @@ import type { PlacesService } from '../services/contracts';
 export function PlaceAutocompleteField({
   label,
   placeholder,
+  initialValue,
   service,
   onSelect,
   onError,
 }: {
   label: string;
   placeholder: string;
+  initialValue?: string;
   service: PlacesService;
   onSelect: (place: AppPlace) => void;
   onError: () => void;
@@ -22,7 +24,12 @@ export function PlaceAutocompleteField({
     let cleanup: (() => void) | undefined;
     if (host.current) {
       service
-        .createAutocomplete(host.current, { placeholder, onSelect, onError })
+        .createAutocomplete(host.current, {
+          placeholder,
+          initialValue,
+          onSelect,
+          onError,
+        })
         .then((dispose) => {
           if (!active) return dispose();
           cleanup = dispose;
@@ -38,7 +45,7 @@ export function PlaceAutocompleteField({
       active = false;
       cleanup?.();
     };
-  }, [onError, onSelect, placeholder, service]);
+  }, [initialValue, onError, onSelect, placeholder, service]);
   // The service owns the slot's children; React must never render into it.
   return (
     <label>

@@ -9,6 +9,7 @@ import { MapScreen } from './MapScreen';
 const mocks = vi.hoisted(() => ({
   computeRoutes: vi.fn(),
   getIncidents: vi.fn(),
+  getCurrentPosition: vi.fn(),
 }));
 
 vi.mock('../services/googleMaps/config', () => ({
@@ -20,18 +21,25 @@ vi.mock('../services/googleMaps/googleDirectionsService', () => ({
 vi.mock('../services/incidents/httpIncidentService', () => ({
   httpIncidentService: { getIncidents: mocks.getIncidents },
 }));
+vi.mock('../services/browserLocationService', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../services/browserLocationService')
+  >()),
+  browserLocationService: { getCurrentPosition: mocks.getCurrentPosition },
+}));
 vi.mock('../services/googleMaps/googlePlacesService', () => ({
   googlePlacesService: {
     createAutocomplete: (
       _host: HTMLElement,
       options: {
         placeholder: string;
+        initialValue?: string;
         onSelect: (place: unknown) => void;
       },
     ) => {
       options.onSelect({
         placeId: options.placeholder,
-        label: options.placeholder,
+        label: options.initialValue ?? options.placeholder,
         coordinate: { latitude: 13.66, longitude: 100.42 },
       });
       return Promise.resolve(() => undefined);
@@ -83,14 +91,36 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(FIXTURE_NOW);
   mocks.computeRoutes.mockResolvedValue({ routes: mockRoutes, meta });
+  mocks.getCurrentPosition.mockResolvedValue({
+    latitude: 13.7563,
+    longitude: 100.5018,
+  });
 });
 afterEach(() => {
   vi.useRealTimers();
   mocks.computeRoutes.mockReset();
   mocks.getIncidents.mockReset();
+  mocks.getCurrentPosition.mockReset();
 });
 
 describe('MapScreen with mocked Google and backend services', () => {
+  it('shows context before requesting browser location permission', async () => {
+    const user = userEvent.setup();
+    renderMap();
+    await user.click(
+      screen.getByRole('button', { name: 'ใช้ตำแหน่งปัจจุบัน' }),
+    );
+    expect(mocks.getCurrentPosition).not.toHaveBeenCalled();
+    const dialog = screen.getByRole('dialog', { name: 'ใช้ตำแหน่งของคุณ' });
+    expect(dialog).toHaveTextContent(
+      'รู้ทางใช้ตำแหน่งเพื่อแสดงเหตุการณ์ใกล้คุณ',
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }),
+    );
+    expect(mocks.getCurrentPosition).toHaveBeenCalledOnce();
+  });
+
   it('queries the route box, matches, and keeps pins in sync with the selection', async () => {
     let resolveRouteIncidents: (value: unknown) => void = () => undefined;
     mocks.getIncidents.mockImplementation((query: AppBounds) =>
@@ -102,7 +132,7 @@ describe('MapScreen with mocked Google and backend services', () => {
     );
     const user = userEvent.setup();
     renderMap();
-    await screen.findByText('ต้นทาง: ค้นหาต้นทาง');
+    await screen.findByText('ต้นทาง: ตำแหน่งปัจจุบัน');
     await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
 
     // Route incidents are still loading: no findings, no "none found" claim.
@@ -151,7 +181,7 @@ describe('MapScreen with mocked Google and backend services', () => {
     });
     const user = userEvent.setup();
     renderMap();
-    await screen.findByText('ต้นทาง: ค้นหาต้นทาง');
+    await screen.findByText('ต้นทาง: ตำแหน่งปัจจุบัน');
     await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
     const results = await screen.findByRole('region', {
       name: 'ผลการค้นหาเส้นทาง',
@@ -170,7 +200,7 @@ describe('MapScreen with mocked Google and backend services', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const user = userEvent.setup();
     renderMap();
-    await screen.findByText('ต้นทาง: ค้นหาต้นทาง');
+    await screen.findByText('ต้นทาง: ตำแหน่งปัจจุบัน');
     await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
     expect(
       await screen.findByText('ยังตรวจสอบรายงานเหตุการณ์ตามเส้นทางไม่ได้'),

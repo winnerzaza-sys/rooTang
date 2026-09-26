@@ -40,7 +40,7 @@ vi.mock('../services/googleMaps/loader', () => ({
               panTo() {}
               setZoom() {}
               getZoom() {
-                return 11;
+                return 14;
               }
             },
           }
@@ -122,11 +122,12 @@ describe('GoogleMapCanvas', () => {
         onIncident={noop}
       />,
     );
-    await waitFor(() => expect(visibleMarkerLabels()).toHaveLength(4));
+    await waitFor(() => expect(visibleMarkerLabels()).toHaveLength(3));
+    expect(visibleMarkerLabels()).toContain('กลุ่มรายงานเหตุการณ์ 2 จุด');
     expect(
-      visibleMarkerLabels().every((label) =>
-        label.includes('ใกล้เส้นทางประมาณ'),
-      ),
+      visibleMarkerLabels()
+        .filter((label) => label.startsWith('มีรายงาน'))
+        .every((label) => label.includes('ใกล้เส้นทางประมาณ')),
     ).toBe(true);
     const selectedLine = () =>
       created.lines

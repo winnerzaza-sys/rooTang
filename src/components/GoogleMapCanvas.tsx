@@ -3,6 +3,7 @@ import {
   categoryPresentation,
   pinSpokenLabel,
 } from '../domain/incidentPresentation';
+import { clusterIncidentPins } from '../domain/incidentClustering';
 import type { IncidentPin } from '../domain/matching/routeAnalysis';
 import type {
   AppBounds,
@@ -44,6 +45,7 @@ export function GoogleMapCanvas({
   const [state, setState] = useState<'loading' | 'ready' | 'config' | 'error'>(
     googleMapsConfig.apiKey ? 'loading' : 'config',
   );
+  const [zoom, setZoom] = useState(11);
 
   useEffect(() => {
     if (!googleMapsConfig.apiKey) {
@@ -64,6 +66,9 @@ export function GoogleMapCanvas({
         map.current.addListener('idle', () => {
           const value = map.current?.getBounds()?.toJSON();
           if (value) onBounds(value);
+        });
+        map.current.addListener('zoom_changed', () => {
+          setZoom(map.current?.getZoom() ?? 11);
         });
         setState('ready');
       })
@@ -104,7 +109,30 @@ export function GoogleMapCanvas({
   useEffect(() => {
     if (state !== 'ready' || !map.current) return;
     markers.current.forEach((marker) => (marker.map = null));
-    markers.current = pins.map(({ incident, match }) => {
+    markers.current = clusterIncidentPins(pins, zoom).map((cluster) => {
+      if (cluster.pins.length > 1) {
+        const content = document.createElement('button');
+        const label = `กลุ่มรายงานเหตุการณ์ ${cluster.pins.length} จุด`;
+        content.className = 'google-incident-cluster';
+        content.textContent = String(cluster.pins.length);
+        content.type = 'button';
+        content.setAttribute('aria-label', label);
+        content.addEventListener('click', () => {
+          const bounds = new google.maps.LatLngBounds();
+          cluster.pins.forEach(({ incident }) =>
+            bounds.extend({ lat: incident.latitude, lng: incident.longitude }),
+          );
+          map.current?.fitBounds(bounds, 72);
+        });
+        return new google.maps.marker.AdvancedMarkerElement({
+          map: map.current,
+          position: { lat: cluster.latitude, lng: cluster.longitude },
+          content,
+          title: label,
+        });
+      }
+
+      const { incident, match } = cluster.pins[0]!;
       const category = categoryPresentation[incident.category];
       const selected = incident.id === selectedIncidentId;
       const label = pinSpokenLabel(incident, match, now);
@@ -123,7 +151,7 @@ export function GoogleMapCanvas({
         zIndex: selected ? 10 : undefined,
       });
     });
-  }, [now, onIncident, pins, selectedIncidentId, state]);
+  }, [now, onIncident, pins, selectedIncidentId, state, zoom]);
 
   useEffect(() => {
     if (state !== 'ready' || !map.current || !focus) return;

@@ -13,7 +13,7 @@ export default defineConfig({
         id: '/',
         name: 'รู้ทาง',
         short_name: 'รู้ทาง',
-        description: 'ดูสิ่งที่จะเจอตลอดเส้นทาง',
+        description: 'ดูเหตุการณ์ก่อนออกเดินทาง',
         lang: 'th',
         dir: 'ltr',
         start_url: '/',

@@ -16,6 +16,11 @@ import {
 const NOW = new Date('2026-09-26T03:00:00.000Z');
 const USER = { latitude: 13.7563, longitude: 100.5018 };
 
+async function acceptLocationContext(page: Page) {
+  await expect(page.getByText('ใช้ตำแหน่งของคุณ')).toBeVisible();
+  await page.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }).click();
+}
+
 function incident(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id: `longdo:${id}`,
@@ -215,7 +220,7 @@ test.describe('installable app shell', () => {
     ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'ค้นหาเส้นทาง' }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
 
     // Deep links resolve to the cached shell too.
     await page.goto('/nearby');
@@ -245,6 +250,7 @@ test.describe('production data states', () => {
       route.fulfill({ json: body([incident('a')], true) }),
     );
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     const card = page.getByRole('button', { name: /^น้ำท่วม:/ });
     await expect(card).toBeVisible();
     await expect(card).toContainText('Longdo/iTIC');
@@ -281,6 +287,7 @@ test.describe('production data states', () => {
         : route.fulfill({ json: body([incident('b')]) }),
     );
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     await expect(page.getByText('ยังโหลดรายการใกล้ฉันไม่ได้')).toBeVisible();
     fail = false;
     await page.getByRole('button', { name: 'ลองใหม่' }).click();
@@ -295,6 +302,7 @@ test.describe('production data states', () => {
     await page.clock.install({ time: NOW });
     await mockIncidents(page, () => new Promise<void>(() => undefined));
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     await expect(
       page.getByRole('status', { name: 'กำลังโหลดเหตุการณ์' }),
     ).toBeVisible();
@@ -309,6 +317,7 @@ test.describe('production data states', () => {
     await isolateNetwork(context);
     await mockIncidents(page, (route) => route.fulfill({ json: body([]) }));
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     await expect(page.getByText('ยังไม่พบรายงานในบริเวณนี้')).toBeVisible();
     await expect(
       page.getByText('ข้อมูลนี้ไม่ใช่การยืนยันว่าไม่มีเหตุการณ์', {
@@ -327,6 +336,7 @@ test.describe('production data states', () => {
       route.fulfill({ json: body([incident('c')]) }),
     );
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     await expect(page.getByRole('button', { name: /^น้ำท่วม:/ })).toBeVisible();
     await context.setOffline(true);
     await expect(page.getByText('คุณกำลังออฟไลน์')).toBeVisible();
@@ -351,6 +361,7 @@ test.describe('production data states', () => {
       }),
     );
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     await expect(
       page.getByText('<img src=x onerror="window.__xss=1">ถนน'),
     ).toBeVisible();
@@ -386,6 +397,7 @@ test.describe('location permission denied', () => {
     await isolateNetwork(context);
     await context.clearPermissions();
     await page.goto('/nearby');
+    await acceptLocationContext(page);
     await expect(page.getByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้')).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'อนุญาตตำแหน่ง' }),

@@ -23,6 +23,7 @@ import type {
 import { useNow } from '../hooks/useNow';
 import { IncidentCard, LoadingCards } from '../components/IncidentCard';
 import { IncidentDetailSheet } from '../components/IncidentDetailSheet';
+import { LocationPermissionPrompt } from '../components/LocationPermissionPrompt';
 import { googleMapsConfig } from '../services/googleMaps/config';
 import {
   browserLocationService,
@@ -38,7 +39,8 @@ import {
 
 const NO_INCIDENTS: RoadIncident[] = [];
 
-type LocationState = 'loading' | 'ready' | LocationErrorCode;
+type LocationState =
+  'prompt' | 'loading' | 'ready' | 'later' | LocationErrorCode;
 
 const locationMessages: Record<LocationErrorCode, string> = {
   denied: 'อนุญาตตำแหน่ง หรือเลือกพื้นที่บนแผนที่',
@@ -73,7 +75,7 @@ export function NearbyScreen({
   const [selected, setSelected] = useState<NearbyIncident | null>(null);
   const [userLocation, setUserLocation] = useState<AppCoordinate>();
   const [locationState, setLocationState] = useState<LocationState>(
-    production ? 'loading' : 'ready',
+    production ? 'prompt' : 'ready',
   );
 
   async function requestLocation() {
@@ -88,14 +90,6 @@ export function NearbyScreen({
       );
     }
   }
-
-  useEffect(() => {
-    if (!production || area) return;
-    const timer = window.setTimeout(() => void requestLocation(), 0);
-    return () => window.clearTimeout(timer);
-    // Location is requested once on entry; retries are explicit user actions.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [production]);
 
   const mockLocation =
     demoState === 'location-denied' ? undefined : MOCK_USER_LOCATION;
@@ -126,9 +120,11 @@ export function NearbyScreen({
   const locationProblem: LocationErrorCode | undefined = origin
     ? undefined
     : production
-      ? locationState === 'loading' || locationState === 'ready'
-        ? undefined
-        : locationState
+      ? locationState === 'denied' ||
+        locationState === 'timeout' ||
+        locationState === 'unavailable'
+        ? locationState
+        : undefined
       : 'denied';
   const partial = production
     ? hasData && Boolean(live.meta?.partial)
@@ -142,6 +138,39 @@ export function NearbyScreen({
 
   function content() {
     if (!origin) {
+      if (production && locationState === 'prompt')
+        return (
+          <LocationPermissionPrompt
+            onAllow={() => void requestLocation()}
+            onLater={() => setLocationState('later')}
+          />
+        );
+      if (production && locationState === 'later')
+        return (
+          <section className="state-card location-state">
+            <span className="state-icon" aria-hidden="true">
+              ⌖
+            </span>
+            <h2>เลือกดูเหตุการณ์ได้ภายหลัง</h2>
+            <p>ใช้ตำแหน่งของคุณเมื่อพร้อม หรือเลือกพื้นที่บนแผนที่</p>
+            <div>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => void requestLocation()}
+              >
+                ใช้ตำแหน่งของฉัน
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onSelectArea}
+              >
+                เลือกพื้นที่
+              </button>
+            </div>
+          </section>
+        );
       if (locationProblem)
         return (
           <section className="state-card location-state">

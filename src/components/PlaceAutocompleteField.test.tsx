@@ -18,6 +18,30 @@ function replacingService(dispose = vi.fn()): PlacesService {
 }
 
 describe('PlaceAutocompleteField', () => {
+  it('passes an initial field value to the Places adapter', async () => {
+    const service = replacingService();
+    const createAutocomplete = vi.fn(
+      (
+        host: HTMLElement,
+        options: Parameters<PlacesService['createAutocomplete']>[1],
+      ) => service.createAutocomplete(host, options),
+    );
+    render(
+      <PlaceAutocompleteField
+        label="ต้นทาง"
+        placeholder="ค้นหาต้นทางอื่น"
+        initialValue="ตำแหน่งปัจจุบัน"
+        service={{ createAutocomplete }}
+        onSelect={() => undefined}
+        onError={() => undefined}
+      />,
+    );
+    await waitFor(() => expect(createAutocomplete).toHaveBeenCalledOnce());
+    expect(createAutocomplete.mock.calls[0]?.[1].initialValue).toBe(
+      'ตำแหน่งปัจจุบัน',
+    );
+  });
+
   it('keeps rendering after the service replaces the host children', async () => {
     render(
       <PlaceAutocompleteField
