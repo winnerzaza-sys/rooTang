@@ -329,28 +329,31 @@ export function MapScreen({
       </button>
       <section className="route-panel" aria-label="ค้นหาเส้นทาง">
         <form
+          className={routeFieldsExpanded ? undefined : 'route-form-collapsed'}
           onSubmit={(event) => {
             event.preventDefault();
             void searchRoutes();
           }}
         >
           <div className="route-panel-toolbar">
-            <span>ต้นทางและปลายทาง</span>
+            {routeFieldsExpanded && <span>ต้นทางและปลายทาง</span>}
             <div className="route-panel-actions">
-              <button
-                type="button"
-                className="route-icon-button"
-                aria-label="สลับต้นทางและปลายทาง"
-                title={
-                  canSwapPlaces
-                    ? 'สลับต้นทางและปลายทาง'
-                    : 'ระบุต้นทางและปลายทางก่อน'
-                }
-                disabled={!canSwapPlaces}
-                onClick={swapPlaces}
-              >
-                <Icon name="swap" />
-              </button>
+              {routeFieldsExpanded && (
+                <button
+                  type="button"
+                  className="route-icon-button"
+                  aria-label="สลับต้นทางและปลายทาง"
+                  title={
+                    canSwapPlaces
+                      ? 'สลับต้นทางและปลายทาง'
+                      : 'ระบุต้นทางและปลายทางก่อน'
+                  }
+                  disabled={!canSwapPlaces}
+                  onClick={swapPlaces}
+                >
+                  <Icon name="swap" />
+                </button>
+              )}
               <button
                 type="button"
                 className="route-icon-button route-collapse-button"
@@ -366,21 +369,6 @@ export function MapScreen({
               </button>
             </div>
           </div>
-          {!routeFieldsExpanded && (
-            <p className="route-fields-summary">
-              <span>
-                {production
-                  ? (originPlace?.label ?? 'ตำแหน่งปัจจุบัน')
-                  : origin}
-              </span>
-              <span aria-hidden="true">→</span>
-              <span>
-                {production
-                  ? (destinationPlace?.label ?? 'ยังไม่ได้ระบุปลายทาง')
-                  : destination || 'ยังไม่ได้ระบุปลายทาง'}
-              </span>
-            </p>
-          )}
           {routeFieldsExpanded &&
             (production ? (
               <div className="route-fields">
@@ -446,37 +434,41 @@ export function MapScreen({
                 </label>
               </div>
             ))}
-          {validation && (
-            <p className="field-error" role="alert">
-              {validation}
-            </p>
-          )}
-          {(production ? destinationPlace : destination.trim()) && (
-            <button
-              className="primary-button"
-              type="submit"
-              disabled={searching || offline}
-            >
-              {searching || demoState === 'loading'
-                ? 'กำลังค้นหาเส้นทาง…'
-                : 'ค้นหาเส้นทาง'}
-            </button>
-          )}
-          {production && (
-            <button
-              type="button"
-              className="secondary-button incident-refresh"
-              disabled={offline}
-              onClick={() => void live.refresh()}
-            >
-              <Icon name="refresh" />
-              อัปเดตเหตุการณ์
-            </button>
-          )}
-          {production && live.meta && (
-            <p className="selected-place">
-              ข้อมูลเหตุการณ์ ณ {formatClockTime(live.meta.generatedAt)} น.
-            </p>
+          {routeFieldsExpanded && (
+            <>
+              {validation && (
+                <p className="field-error" role="alert">
+                  {validation}
+                </p>
+              )}
+              {(production ? destinationPlace : destination.trim()) && (
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={searching || offline}
+                >
+                  {searching || demoState === 'loading'
+                    ? 'กำลังค้นหาเส้นทาง…'
+                    : 'ค้นหาเส้นทาง'}
+                </button>
+              )}
+              {production && (
+                <button
+                  type="button"
+                  className="secondary-button incident-refresh"
+                  disabled={offline}
+                  onClick={() => void live.refresh()}
+                >
+                  <Icon name="refresh" />
+                  อัปเดตเหตุการณ์
+                </button>
+              )}
+              {production && live.meta && (
+                <p className="selected-place">
+                  ข้อมูลเหตุการณ์ ณ {formatClockTime(live.meta.generatedAt)} น.
+                </p>
+              )}
+            </>
           )}
         </form>
         {view.selectedRoute && !areaSelecting && (

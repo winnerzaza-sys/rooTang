@@ -105,7 +105,7 @@ describe('รู้ทาง app shell', () => {
     expect(destination).toHaveValue('บ้าน');
   });
 
-  it('collapses and restores the route fields without losing their values', async () => {
+  it('hides the entire route form except the expand control and preserves values', async () => {
     const user = userEvent.setup();
     renderApp();
     await user.type(
@@ -119,7 +119,15 @@ describe('รู้ทาง app shell', () => {
     expect(
       screen.queryByRole('textbox', { name: 'ปลายทาง' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('เซ็นทรัล พระราม 2')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'ค้นหาเส้นทาง' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'สลับต้นทางและปลายทาง' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'แสดงช่องต้นทางและปลายทาง' }),
+    ).toBeVisible();
 
     await user.click(
       screen.getByRole('button', { name: 'แสดงช่องต้นทางและปลายทาง' }),

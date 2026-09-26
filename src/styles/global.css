@@ -326,6 +326,21 @@ select:focus-visible {
   display: flex;
   gap: 2px;
 }
+.route-panel form.route-form-collapsed {
+  width: 48px;
+  margin-left: auto;
+  padding: 3px;
+  border-radius: 16px;
+}
+.route-form-collapsed > :not(.route-panel-toolbar),
+.route-form-collapsed .route-panel-toolbar > span,
+.route-form-collapsed .route-panel-actions > :not(.route-collapse-button) {
+  display: none;
+}
+.route-form-collapsed .route-panel-toolbar {
+  min-height: 40px;
+  padding: 0;
+}
 .route-icon-button {
   width: 40px;
   height: 40px;
@@ -351,21 +366,6 @@ select:focus-visible {
 }
 .route-collapse-button[aria-expanded='true'] .icon {
   transform: rotate(180deg);
-}
-.route-fields-summary {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  margin: 2px 8px 8px;
-  color: var(--color-muted);
-  font-size: 13px;
-}
-.route-fields-summary span:not([aria-hidden]) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .route-panel label {
   display: grid;
