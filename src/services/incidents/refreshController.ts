@@ -1,4 +1,4 @@
-export const INCIDENT_REFRESH_MS = 120_000;
+export const INCIDENT_REFRESH_MS = 300_000;
 
 export class IncidentRefreshController {
   private timer?: number;

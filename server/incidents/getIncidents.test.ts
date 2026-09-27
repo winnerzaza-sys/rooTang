@@ -21,7 +21,7 @@ const incident = (provider: 'longdo' | 'traffy'): RoadIncident => ({
 const query = { north: 14, south: 13, east: 101, west: 100 };
 describe('incident aggregation', () => {
   it('uses independent cache durations', () => {
-    expect(LONGDO_CACHE_MS).toBe(120_000);
+    expect(LONGDO_CACHE_MS).toBe(300_000);
     expect(TRAFFY_CACHE_MS).toBe(300_000);
   });
   it('returns partial success when one provider fails', async () => {

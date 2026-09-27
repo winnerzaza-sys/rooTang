@@ -7,6 +7,10 @@ import {
 afterEach(() => vi.useRealTimers());
 
 describe('IncidentRefreshController', () => {
+  it('polls incidents every five minutes', () => {
+    expect(INCIDENT_REFRESH_MS).toBe(300_000);
+  });
+
   it('pauses while offline and refreshes when visible and stale', () => {
     vi.useFakeTimers();
     const refresh = vi.fn();

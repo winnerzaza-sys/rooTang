@@ -12,7 +12,7 @@ import { coordinateInBounds } from '../validation/bounds.js';
 const LONGDO_URL = 'https://event.longdo.com/feed/json';
 const TRAFFY_URL =
   'https://publicapi.traffy.in.th/teamchadchart-stat-api/geojson/v2';
-export const LONGDO_CACHE_MS = 120_000;
+export const LONGDO_CACHE_MS = 300_000;
 export const TRAFFY_CACHE_MS = 300_000;
 
 const longdoCache = new ProviderCache<RoadIncident[]>(LONGDO_CACHE_MS);
