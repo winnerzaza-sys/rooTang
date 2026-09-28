@@ -40,7 +40,16 @@ vi.mock('../features/MapScreen', () => ({
   },
 }));
 vi.mock('../features/NearbyScreen', () => ({
-  NearbyScreen: () => <main>nearby</main>,
+  NearbyScreen: ({
+    onIncidentMeta,
+  }: {
+    onIncidentMeta?: (value?: IncidentResponseMeta) => void;
+  }) => {
+    useEffect(() => {
+      if (reportMeta) onIncidentMeta?.(meta);
+    }, [onIncidentMeta]);
+    return <main>nearby</main>;
+  },
 }));
 
 const { App } = await import('./App');
@@ -67,18 +76,24 @@ describe('App in production mode', () => {
     expect(screen.getByText('map:normal')).toBeInTheDocument();
   });
 
-  it('shows the real incident data time and partial status in the header', () => {
-    renderApp();
+  it('shows the real incident data time and partial status only on nearby', () => {
+    renderApp('/nearby');
     expect(
       screen.getByText('ข้อมูลเหตุการณ์ ณ 10:05 น. • ไม่ครบทุกแหล่ง'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/2 นาทีที่แล้ว/)).not.toBeInTheDocument();
   });
 
-  it('says no data has loaded instead of claiming freshness', () => {
+  it('says no data has loaded on nearby instead of claiming freshness', () => {
     reportMeta = false;
-    renderApp();
+    renderApp('/nearby');
     expect(screen.getByText('ยังไม่มีข้อมูลเหตุการณ์')).toBeInTheDocument();
+  });
+
+  it('does not render the app header on the map', () => {
+    renderApp();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(screen.queryByText('ดูเหตุการณ์ก่อนออกเดินทาง')).toBeNull();
   });
 });
 

@@ -47,6 +47,7 @@ import {
   RouteResults,
   type RouteAnalysisState,
 } from '../components/RouteResults';
+import { RoutePickerPage } from '../components/RoutePickerPage';
 
 const NO_ROUTES: RouteOption[] = [];
 const NO_INCIDENTS: RoadIncident[] = [];
@@ -92,6 +93,7 @@ export function MapScreen({
   const [locationError, setLocationError] = useState<string>();
   const [placesError, setPlacesError] = useState(false);
   const [routeFieldsExpanded, setRouteFieldsExpanded] = useState(true);
+  const [showRoutePicker, setShowRoutePicker] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [searchAfterLocation, setSearchAfterLocation] = useState(false);
   const routeSwipeStart = useRef<{ x: number; y: number } | undefined>(
@@ -202,7 +204,8 @@ export function MapScreen({
         return;
       }
       setRoutes(result.routes);
-      setSelectedRouteId(result.routes[0]?.id);
+      setSelectedRouteId(undefined);
+      setShowRoutePicker(true);
       onClearFocus();
     } catch (error) {
       if (import.meta.env.DEV) console.error('Route search failed', error);
@@ -250,7 +253,8 @@ export function MapScreen({
         return;
       }
       setRoutes(result.routes);
-      setSelectedRouteId(result.routes[0]?.id);
+      setSelectedRouteId(undefined);
+      setShowRoutePicker(true);
       onClearFocus();
     } catch (error) {
       if (import.meta.env.DEV) console.error('Route search failed', error);
@@ -343,6 +347,17 @@ export function MapScreen({
     setRouteFieldsExpanded((expanded) => !expanded);
   }
 
+  function selectRoute(id: string) {
+    setSelectedRouteId(id);
+    setShowRoutePicker(false);
+    setRouteFieldsExpanded(false);
+  }
+
+  function closeRoutePicker() {
+    setShowRoutePicker(false);
+    if (!selectedRouteId) setRoutes(NO_ROUTES);
+  }
+
   const selectedMatch = selectedIncident
     ? view.matches.find((item) => item.incident.id === selectedIncident.id)
     : undefined;
@@ -351,7 +366,7 @@ export function MapScreen({
     <main className="map-screen" id="main-content">
       <button
         type="button"
-        className="map-top-locate"
+        className="map-location-button"
         aria-label="ใช้ตำแหน่งปัจจุบัน"
         onClick={useCurrentLocation}
       >
@@ -506,9 +521,8 @@ export function MapScreen({
             </>
           )}
         </form>
-        {view.selectedRoute && !areaSelecting && (
+        {view.selectedRoute && !areaSelecting && !showRoutePicker && (
           <RouteResults
-            routes={analyzedRoutes}
             selectedRoute={view.selectedRoute}
             matches={view.matches}
             analysis={analysis}
@@ -519,7 +533,7 @@ export function MapScreen({
                 : undefined
             }
             now={now}
-            onSelect={setSelectedRouteId}
+            onChangeRoute={() => setShowRoutePicker(true)}
             onIncident={setSelectedIncident}
             onRetry={() => void live.refresh()}
           />
@@ -644,6 +658,20 @@ export function MapScreen({
             setShowLocationPrompt(false);
             setSearchAfterLocation(false);
           }}
+        />
+      )}
+      {showRoutePicker && analyzedRoutes.length > 0 && (
+        <RoutePickerPage
+          routes={analyzedRoutes}
+          originLabel={
+            production ? (originPlace?.label ?? 'ตำแหน่งปัจจุบัน') : origin
+          }
+          destinationLabel={
+            production ? (destinationPlace?.label ?? destination) : destination
+          }
+          analysis={analysis}
+          onBack={closeRoutePicker}
+          onSelect={selectRoute}
         />
       )}
     </main>

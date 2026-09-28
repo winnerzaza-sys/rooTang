@@ -52,11 +52,28 @@ async function searchRoute() {
     'เซ็นทรัล พระราม 2',
   );
   await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+  const picker = await screen.findByRole('dialog', { name: 'เลือกเส้นทาง' });
+  await user.click(
+    within(picker).getByRole('button', { name: /เลือกพระราม 2/ }),
+  );
   await screen.findByText('42 นาที');
   return user;
 }
 
 describe('รู้ทาง app shell', () => {
+  it('uses one location button on the map without the brand header or recenter control', () => {
+    renderApp();
+    expect(screen.queryByText('ดูเหตุการณ์ก่อนออกเดินทาง')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'ใช้ตำแหน่งปัจจุบัน' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('button', {
+        name: 'เลื่อนแผนที่กลับไปตำแหน่งของฉัน',
+      }),
+    ).toBeNull();
+  });
+
   it('has exactly two accessible primary navigation destinations', () => {
     renderApp();
     const nav = screen.getByRole('navigation', { name: 'เมนูหลัก' });
@@ -253,7 +270,11 @@ describe('route matching on the map', () => {
 
   it('changes polyline, pins, ETA, count and findings together', async () => {
     const user = await searchRoute();
-    await user.click(screen.getByRole('radio', { name: /กาญจนาภิเษก/ }));
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนเส้นทาง' }));
+    const picker = screen.getByRole('dialog', { name: 'เลือกเส้นทาง' });
+    await user.click(
+      within(picker).getByRole('button', { name: /เลือกกาญจนาภิเษก/ }),
+    );
     expect(screen.getByText('49 นาที')).toBeInTheDocument();
     expect(screen.getByText('12.7 กม.')).toBeInTheDocument();
     expect(
@@ -274,35 +295,37 @@ describe('route matching on the map', () => {
     expect(
       map().querySelector('[data-route-id="route-primary"]'),
     ).toHaveAttribute('data-selected', 'false');
-    expect(screen.getByRole('radio', { name: /กาญจนาภิเษก/ })).toHaveAttribute(
-      'aria-checked',
-      'true',
+    expect(screen.queryByRole('dialog', { name: 'เลือกเส้นทาง' })).toBeNull();
+  });
+
+  it('shows route choices as a full-page dialog and returns to the search form', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await user.type(
+      screen.getByRole('textbox', { name: 'ปลายทาง' }),
+      'เซ็นทรัล พระราม 2',
+    );
+    await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+    expect(
+      await screen.findByRole('dialog', { name: 'เลือกเส้นทาง' }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'กลับไปแก้ไขการค้นหา' }),
+    );
+    expect(screen.queryByRole('dialog', { name: 'เลือกเส้นทาง' })).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'ปลายทาง' })).toHaveValue(
+      'เซ็นทรัล พระราม 2',
     );
   });
 
-  it('moves the route selection with arrow keys from a single tab stop', async () => {
-    const user = await searchRoute();
-    const [primary, alternative] = screen.getAllByRole('radio');
-    expect(primary).toHaveAttribute('tabindex', '0');
-    expect(alternative).toHaveAttribute('tabindex', '-1');
-    primary!.focus();
-    await user.keyboard('{ArrowRight}');
-    expect(alternative).toHaveFocus();
-    expect(alternative).toHaveAttribute('aria-checked', 'true');
-    expect(
-      screen.getByText('49 นาที', { selector: 'strong' }),
-    ).toBeInTheDocument();
-    await user.keyboard('{ArrowRight}');
-    expect(primary).toHaveFocus();
-    expect(primary).toHaveAttribute('aria-checked', 'true');
-  });
-
   it('shows per-route report counts without a risk score', async () => {
-    await searchRoute();
-    const options = screen.getAllByRole('radio');
+    const user = await searchRoute();
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนเส้นทาง' }));
+    const picker = screen.getByRole('dialog', { name: 'เลือกเส้นทาง' });
+    const options = within(picker).getAllByRole('button', { name: /^เลือก/ });
     expect(options[0]).toHaveTextContent('พบ 4 รายงาน');
     expect(options[1]).toHaveTextContent('พบ 3 รายงาน');
-    expect(results()).not.toHaveTextContent(/คะแนน|ความเสี่ยง|ปลอดภัยกว่า/);
+    expect(picker).not.toHaveTextContent(/คะแนน|ความเสี่ยง|ปลอดภัยกว่า/);
   });
 
   it('marks possible parallel-road and duplicate reports conservatively', async () => {
@@ -312,7 +335,13 @@ describe('route matching on the map', () => {
         'อาจเป็นรายงานเดียวกับรายการอื่นที่อยู่ใกล้กัน',
       ),
     ).toHaveLength(2);
-    await user.click(screen.getByRole('radio', { name: /กาญจนาภิเษก/ }));
+    await user.click(screen.getByRole('button', { name: 'เปลี่ยนเส้นทาง' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'เลือกเส้นทาง' })).getByRole(
+        'button',
+        { name: /เลือกกาญจนาภิเษก/ },
+      ),
+    );
     expect(
       within(results()).getByText('อาจอยู่บนถนนคู่ขนานหรือถนนใกล้เคียง'),
     ).toBeInTheDocument();
@@ -451,7 +480,7 @@ describe('Nearby feed', () => {
     renderApp('/nearby?state=location-denied');
     expect(screen.getByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'อนุญาตตำแหน่ง' }),
+      screen.getByRole('button', { name: 'วิธีเปิดตำแหน่ง' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'เลือกพื้นที่' }));
     const picker = screen.getByRole('region', { name: 'เลือกพื้นที่' });

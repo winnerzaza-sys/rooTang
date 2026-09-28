@@ -211,7 +211,9 @@ test.describe('installable app shell', () => {
 
     await context.setOffline(true);
     await page.reload();
-    await expect(page.getByText('รู้ทาง', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'ใช้ตำแหน่งปัจจุบัน' }),
+    ).toBeVisible();
     await expect(page.getByText('คุณกำลังออฟไลน์')).toBeVisible();
     await expect(
       page.getByText(
@@ -400,10 +402,14 @@ test.describe('location permission denied', () => {
     await acceptLocationContext(page);
     await expect(page.getByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้')).toBeVisible();
     await expect(
-      page.getByRole('button', { name: 'อนุญาตตำแหน่ง' }),
+      page.getByRole('button', { name: 'วิธีเปิดตำแหน่ง' }),
     ).toBeVisible();
+    await page.getByRole('button', { name: 'วิธีเปิดตำแหน่ง' }).click();
     await expect(
-      page.getByRole('button', { name: 'เลือกพื้นที่' }),
+      page.getByRole('dialog', { name: 'เปิดสิทธิ์ตำแหน่ง' }),
+    ).toContainText('หลังเลือก Don’t Allow เบราว์เซอร์จะไม่ถามซ้ำ');
+    await expect(
+      page.getByRole('button', { name: 'เลือกพื้นที่แทน' }),
     ).toBeVisible();
   });
 });

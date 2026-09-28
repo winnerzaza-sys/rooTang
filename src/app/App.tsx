@@ -151,40 +151,42 @@ export function App() {
       <a className="skip-link" href="#main-content">
         ข้ามไปยังเนื้อหาหลัก
       </a>
-      <header className="app-header">
-        <div className="brand">
-          <img src="/icons/ru-thang-app-icon-192.png" alt="" />
-          <div>
-            <h1>รู้ทาง</h1>
-            <span>ดูเหตุการณ์ก่อนออกเดินทาง</span>
+      {nearbyActive && (
+        <header className="app-header">
+          <div className="brand">
+            <img src="/icons/ru-thang-app-icon-192.png" alt="" />
+            <div>
+              <h1>รู้ทาง</h1>
+              <span>ดูเหตุการณ์ก่อนออกเดินทาง</span>
+            </div>
           </div>
-        </div>
-        <div className="header-tools">
-          {!production && (
-            <label className="demo-control">
-              <span>ตัวอย่างสถานะ</span>
-              <select
-                aria-label="เลือกตัวอย่างสถานะหน้าจอ"
-                value={demoState}
-                onChange={(event) =>
-                  changeState(event.target.value as DemoState)
-                }
-              >
-                {demoStates.map((state) => (
-                  <option value={state.value} key={state.value}>
-                    {state.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <DataStatus
-            production={production}
-            offline={offline}
-            meta={incidentMeta}
-          />
-        </div>
-      </header>
+          <div className="header-tools">
+            {!production && (
+              <label className="demo-control">
+                <span>ตัวอย่างสถานะ</span>
+                <select
+                  aria-label="เลือกตัวอย่างสถานะหน้าจอ"
+                  value={demoState}
+                  onChange={(event) =>
+                    changeState(event.target.value as DemoState)
+                  }
+                >
+                  {demoStates.map((state) => (
+                    <option value={state.value} key={state.value}>
+                      {state.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <DataStatus
+              production={production}
+              offline={offline}
+              meta={incidentMeta}
+            />
+          </div>
+        </header>
+      )}
       <SystemBanners state={offline ? 'offline' : demoState} />
       {updateReady && (
         <div className="update-toast" role="status">

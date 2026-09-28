@@ -23,6 +23,7 @@ import type {
 import { useNow } from '../hooks/useNow';
 import { IncidentCard, LoadingCards } from '../components/IncidentCard';
 import { IncidentDetailSheet } from '../components/IncidentDetailSheet';
+import { LocationPermissionHelp } from '../components/LocationPermissionHelp';
 import { LocationPermissionPrompt } from '../components/LocationPermissionPrompt';
 import { googleMapsConfig } from '../services/googleMaps/config';
 import {
@@ -47,7 +48,8 @@ type LocationState =
   'prompt' | 'loading' | 'ready' | 'later' | LocationErrorCode;
 
 const locationMessages: Record<LocationErrorCode, string> = {
-  denied: 'อนุญาตตำแหน่ง หรือเลือกพื้นที่บนแผนที่',
+  denied:
+    'ปิดสิทธิ์ตำแหน่งอยู่ เปิดสิทธิ์ในการตั้งค่า หรือเลือกพื้นที่บนแผนที่',
   timeout: 'ค้นหาตำแหน่งไม่ทันเวลา ลองอีกครั้ง หรือเลือกพื้นที่บนแผนที่',
   unavailable: 'ยังระบุตำแหน่งไม่ได้ ลองอีกครั้ง หรือเลือกพื้นที่บนแผนที่',
 };
@@ -78,6 +80,7 @@ export function NearbyScreen({
   const [filter, setFilter] = useState<NearbyFilter>('all');
   const [selected, setSelected] = useState<NearbyIncident | null>(null);
   const [userLocation, setUserLocation] = useState<AppCoordinate>();
+  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
   const [locationState, setLocationState] = useState<LocationState>(() => {
     if (!production) return 'ready';
     const remembered = readLocationConsent();
@@ -229,9 +232,15 @@ export function NearbyScreen({
               <button
                 type="button"
                 className="primary-button"
-                onClick={allowLocation}
+                onClick={
+                  locationProblem === 'denied'
+                    ? () => setShowPermissionHelp(true)
+                    : allowLocation
+                }
               >
-                อนุญาตตำแหน่ง
+                {locationProblem === 'denied'
+                  ? 'วิธีเปิดตำแหน่ง'
+                  : 'ลองตำแหน่งอีกครั้ง'}
               </button>
               <button
                 type="button"
@@ -397,6 +406,19 @@ export function NearbyScreen({
             const incident = selected.incident;
             setSelected(null);
             onViewIncident(incident);
+          }}
+        />
+      )}
+      {showPermissionHelp && (
+        <LocationPermissionHelp
+          onClose={() => setShowPermissionHelp(false)}
+          onRetry={() => {
+            setShowPermissionHelp(false);
+            allowLocation();
+          }}
+          onSelectArea={() => {
+            setShowPermissionHelp(false);
+            onSelectArea();
           }}
         />
       )}

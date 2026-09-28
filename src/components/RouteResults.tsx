@@ -48,7 +48,6 @@ function sheetHeights(): Record<SheetLevel, number> {
 }
 
 interface Props {
-  routes: RouteOption[];
   selectedRoute: RouteOption;
   matches: RouteIncidentMatch[];
   analysis: RouteAnalysisState;
@@ -56,7 +55,7 @@ interface Props {
   /** When incident data was generated; shown so cached data is not "live". */
   dataTimeLabel?: string;
   now: number;
-  onSelect: (id: string) => void;
+  onChangeRoute: () => void;
   onIncident: (incident: RoadIncident) => void;
   onRetry: () => void;
 }
@@ -70,14 +69,13 @@ function countLabel(analysis: RouteAnalysisState, count: number): string {
 }
 
 export function RouteResults({
-  routes,
   selectedRoute,
   matches,
   analysis,
   partial,
   dataTimeLabel,
   now,
-  onSelect,
+  onChangeRoute,
   onIncident,
   onRetry,
 }: Props) {
@@ -192,67 +190,18 @@ export function RouteResults({
         </div>
         <p>{countLabel(analysis, matches.length)}</p>
       </div>
+      <button
+        type="button"
+        className="change-route-button"
+        onClick={onChangeRoute}
+      >
+        <Icon name="route" />
+        เปลี่ยนเส้นทาง
+      </button>
       <div
         className="route-results-body"
         aria-hidden={sheetLevel === 'collapsed'}
       >
-        <div
-          className="route-options"
-          role="radiogroup"
-          aria-label="เลือกเส้นทาง"
-          onKeyDown={(event) => {
-            const step = {
-              ArrowRight: 1,
-              ArrowDown: 1,
-              ArrowLeft: -1,
-              ArrowUp: -1,
-            }[event.key];
-            if (!step || routes.length < 2) return;
-            event.preventDefault();
-            const index = routes.findIndex(
-              (route) => route.id === selectedRoute.id,
-            );
-            const next =
-              routes[(index + step + routes.length) % routes.length]!;
-            onSelect(next.id);
-            event.currentTarget
-              .querySelector<HTMLElement>(`[data-route-id="${next.id}"]`)
-              ?.focus();
-          }}
-        >
-          {routes.map((route) => {
-            const selected = route.id === selectedRoute.id;
-            return (
-              <button
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                // Radio pattern: one tab stop, arrow keys move the selection.
-                tabIndex={selected ? 0 : -1}
-                data-route-id={route.id}
-                className={selected ? 'active' : ''}
-                key={route.id}
-                onClick={() => onSelect(route.id)}
-              >
-                <strong>{route.label}</strong>
-                <span>
-                  {formatRouteDuration(route.durationMinutes)} •{' '}
-                  {formatRouteDistance(route.distanceKm)}
-                </span>
-                {route.extraMinutes ? (
-                  <small>ช้ากว่า {route.extraMinutes} นาที</small>
-                ) : null}
-                {analysis === 'ready' && (
-                  <small>
-                    {route.matches.length
-                      ? `พบ ${route.matches.length} รายงาน`
-                      : 'ยังไม่พบรายงาน'}
-                  </small>
-                )}
-              </button>
-            );
-          })}
-        </div>
         <a
           className="google-maps-navigation"
           href={googleMapsNavigationUrl(selectedRoute)}

@@ -130,8 +130,59 @@ describe('Nearby feed with backend data', () => {
       await screen.findByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('อนุญาตตำแหน่ง หรือเลือกพื้นที่บนแผนที่'),
+      screen.getByText(
+        'ปิดสิทธิ์ตำแหน่งอยู่ เปิดสิทธิ์ในการตั้งค่า หรือเลือกพื้นที่บนแผนที่',
+      ),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'วิธีเปิดตำแหน่ง' }));
+    expect(
+      screen.getByRole('dialog', { name: 'เปิดสิทธิ์ตำแหน่ง' }),
+    ).toHaveTextContent('หลังเลือก Don’t Allow เบราว์เซอร์จะไม่ถามซ้ำ');
+    await user.click(screen.getByRole('button', { name: 'เลือกพื้นที่แทน' }));
+    expect(handlers.onSelectArea).toHaveBeenCalledOnce();
+    expect(mocks.getIncidents).not.toHaveBeenCalled();
+  });
+
+  it('retries location after the user opens permission settings', async () => {
+    mocks.getCurrentPosition
+      .mockRejectedValueOnce(new LocationServiceError('denied'))
+      .mockResolvedValueOnce(MOCK_USER_LOCATION);
+    const user = userEvent.setup();
+    renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'วิธีเปิดตำแหน่ง' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'ลองตำแหน่งอีกครั้ง' }),
+    );
+    expect(
+      await screen.findByRole('list', { name: 'รายการเหตุการณ์ใกล้ฉัน' }),
+    ).toBeInTheDocument();
+  });
+
+  it('lets the user close location permission help', async () => {
+    mocks.getCurrentPosition.mockRejectedValue(
+      new LocationServiceError('denied'),
+    );
+    const user = userEvent.setup();
+    renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'วิธีเปิดตำแหน่ง' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'ปิดคำแนะนำ' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้')).toBeInTheDocument();
+  });
+
+  it('still selects an area directly from other location errors', async () => {
+    mocks.getCurrentPosition.mockRejectedValue(
+      new LocationServiceError('unavailable'),
+    );
+    const user = userEvent.setup();
+    const handlers = renderNearby();
+    await user.click(screen.getByRole('button', { name: 'ใช้ตำแหน่งของฉัน' }));
     await user.click(screen.getByRole('button', { name: 'เลือกพื้นที่' }));
     expect(handlers.onSelectArea).toHaveBeenCalledOnce();
     expect(mocks.getIncidents).not.toHaveBeenCalled();
@@ -147,7 +198,9 @@ describe('Nearby feed with backend data', () => {
     expect(
       await screen.findByText(/ค้นหาตำแหน่งไม่ทันเวลา/),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'อนุญาตตำแหน่ง' }));
+    await user.click(
+      screen.getByRole('button', { name: 'ลองตำแหน่งอีกครั้ง' }),
+    );
     expect(
       await screen.findByRole('list', { name: 'รายการเหตุการณ์ใกล้ฉัน' }),
     ).toBeInTheDocument();

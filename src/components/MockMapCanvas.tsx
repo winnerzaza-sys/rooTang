@@ -112,15 +112,6 @@ export function MockMapCanvas({
           <div className="map-label label-one">ถนนพระราม 2</div>
           <div className="map-label label-two">ถนนกัลปพฤกษ์</div>
           {showCenter && <span className="map-crosshair" aria-hidden="true" />}
-          {!showCenter && (
-            <button
-              type="button"
-              className="recenter-button"
-              aria-label="เลื่อนแผนที่กลับไปตำแหน่งของฉัน"
-            >
-              <Icon name="locate" />
-            </button>
-          )}
         </>
       )}
     </section>

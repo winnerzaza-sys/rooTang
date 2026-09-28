@@ -153,8 +153,8 @@ describe('MapScreen with mocked Google and backend services', () => {
 
     // Route incidents are still loading: no findings, no "none found" claim.
     expect(
-      await screen.findByText('กำลังตรวจสอบรายงานใกล้เส้นทาง…'),
-    ).toBeInTheDocument();
+      await screen.findAllByText('กำลังตรวจสอบรายงานใกล้เส้นทาง'),
+    ).toHaveLength(2);
     expect(
       screen.queryByText('ยังไม่พบรายงานเหตุการณ์ใกล้เส้นทางนี้'),
     ).not.toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('MapScreen with mocked Google and backend services', () => {
 
     resolveRouteIncidents({ incidents, meta });
     expect(
-      await screen.findByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 4 จุด'),
+      await screen.findByText('พบ 4 รายงานใกล้เส้นทาง'),
     ).toBeInTheDocument();
     expect(pins()).toEqual([
       'longdo:flood-01',
@@ -173,9 +173,12 @@ describe('MapScreen with mocked Google and backend services', () => {
       'longdo:accident-02',
       'traffy:road-03',
     ]);
-    expect(screen.getByText(/ไม่ใช่ข้อมูลสด/)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('radio', { name: /กาญจนาภิเษก/ }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'เลือกเส้นทาง' })).getByRole(
+        'button',
+        { name: /เลือกกาญจนาภิเษก/ },
+      ),
+    );
     expect(screen.getByText('49 นาที')).toBeInTheDocument();
     expect(
       screen.getByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 3 จุด'),
@@ -199,6 +202,11 @@ describe('MapScreen with mocked Google and backend services', () => {
     renderMap();
     await screen.findByText('ต้นทาง: ตำแหน่งปัจจุบัน');
     await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+    await user.click(
+      within(
+        await screen.findByRole('dialog', { name: 'เลือกเส้นทาง' }),
+      ).getByRole('button', { name: /เลือกพระราม 2/ }),
+    );
     const results = await screen.findByRole('region', {
       name: 'ผลการค้นหาเส้นทาง',
     });
@@ -218,6 +226,11 @@ describe('MapScreen with mocked Google and backend services', () => {
     renderMap();
     await screen.findByText('ต้นทาง: ตำแหน่งปัจจุบัน');
     await user.click(screen.getByRole('button', { name: 'ค้นหาเส้นทาง' }));
+    await user.click(
+      within(
+        await screen.findByRole('dialog', { name: 'เลือกเส้นทาง' }),
+      ).getByRole('button', { name: /เลือกพระราม 2/ }),
+    );
     expect(
       await screen.findByText('ยังตรวจสอบรายงานเหตุการณ์ตามเส้นทางไม่ได้'),
     ).toBeInTheDocument();

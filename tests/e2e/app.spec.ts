@@ -32,6 +32,10 @@ test('searches a mock route and shows ordered findings', async ({ page }) => {
   await page.goto('/');
   await enterDestination(page);
   await page.getByRole('button', { name: 'ค้นหาเส้นทาง' }).click();
+  const picker = page.getByRole('dialog', { name: 'เลือกเส้นทาง' });
+  await expect(picker).toBeVisible();
+  await picker.getByRole('button', { name: /เลือกพระราม 2/ }).click();
+  await expect(picker).toBeHidden();
   await expect(page.getByText('42 นาที', { exact: true })).toBeVisible();
   await expect(
     page.getByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 4 จุด'),
@@ -50,7 +54,10 @@ test('changes route markers and findings together', async ({ page }) => {
   await page.goto('/');
   await enterDestination(page);
   await page.getByRole('button', { name: 'ค้นหาเส้นทาง' }).click();
-  await page.getByRole('radio', { name: /เส้นทางเลี่ยง/ }).click();
+  await page
+    .getByRole('dialog', { name: 'เลือกเส้นทาง' })
+    .getByRole('button', { name: /เลือกกาญจนาภิเษก/ })
+    .click();
   await expect(page.getByText('49 นาที', { exact: true })).toBeVisible();
   await expect(
     page.getByText('พบรายงานเหตุการณ์ใกล้เส้นทาง 3 จุด'),
@@ -103,7 +110,7 @@ test('displays location denied state and selects an area', async ({ page }) => {
   await page.goto('/nearby?state=location-denied');
   await expect(page.getByText('ยังดูเหตุการณ์ใกล้คุณไม่ได้')).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'อนุญาตตำแหน่ง' }),
+    page.getByRole('button', { name: 'วิธีเปิดตำแหน่ง' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'เลือกพื้นที่' }).click();
   await page.getByRole('button', { name: 'ใช้พื้นที่นี้' }).click();
